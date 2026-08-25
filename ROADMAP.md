@@ -12,6 +12,16 @@ collision — see below).
 
 **Not done:** everything else in this file.
 
+## Purpose / scope
+
+Not a bookmarks replacement or a citation manager — though it can be used
+as either. The actual use case: papers/websites that matter for a project
+but can't be dealt with right now and shouldn't be forgotten, without
+relying on a pile of open tabs (costly) or "email it to myself" (unreliable).
+Expected volume: a few dozen entries a month is *possible* but not the
+common case. This shapes priority — see the volume/database note under
+item 1, and why items 2 and 3 are parked below.
+
 ---
 
 ## 1. Cross-machine sync beyond `storage.sync`
@@ -57,9 +67,15 @@ messaging host that's also relevant to a truly custom output-file path
 page read from; making the file authoritative would mean re-reading it
 back on load too, needing native messaging in both directions.
 
-**Recommendation:** Move to **B** first if the ceiling or cross-browser
-gap actually becomes a problem, since it reuses what's already set up.
-Treat C and D as later options, not defaults.
+**Not urgent.** Given the actual usage pattern (see Purpose/scope above),
+the `storage.sync` ceiling isn't expected to bite from volume alone.
+The real trigger for revisiting this is a *usage shift*, not just a
+count: if the list grows very long **and** the tool starts getting used
+more broadly — real citation collection, generating stats on one's own
+reading/interests, etc. — that's when a proper, more compact/efficient
+database (not just a bigger sync quota) becomes the right move, and B/C
+above should be re-evaluated together rather than B alone as a
+band-aid. Until then: no action needed.
 
 ---
 
@@ -110,10 +126,12 @@ small standalone HTML file → send it yourself.
 - Pros: trivial, zero infrastructure.
 - Cons: not really "sharing" in the connected sense — a stopgap.
 
-**Recommendation:** Ship **A** first if sharing is wanted soon. Treat
-**B** as a deliberate, separate decision — not a natural next step from
-A — and consider bundling it with item 1 if it's ever built, since it
-would subsume `storage.sync`/GitHub-sync entirely.
+**Decision: parked, not urgent.** Consistent with the actual use case
+(a personal deferred-reading queue, not a collaboration tool) — sharing
+isn't a near-term need. If it becomes one: ship **A** first, cheap and
+reuses what's already in place. Treat **B** as a deliberate, separate
+decision, and consider bundling it with item 1 if it's ever built, since
+it would subsume `storage.sync`/GitHub-sync entirely.
 
 ---
 
@@ -153,14 +171,10 @@ if Safari becomes part of daily use.
   primary user of this extension, don't switch browsers often enough for
   this to matter in practice. Revisit if that changes.
 
-## Open questions worth deciding before building
+## Still open
 
-- For sharing: whole collection, individual entries, or by category?
-  Who's the imagined audience — a handful of named collaborators, or
-  genuinely the public?
-- For sync: is "two of my own machines, same browser" actually the real
-  need, or is cross-browser sync (Firefox laptop ↔ Chrome desktop) part
-  of the ask? That alone rules out `storage.sync` as a long-term answer.
-- How much history/volume is realistic? A few dozen entries a month looks
-  very different, cost- and complexity-wise, than thousands accumulated
-  over years.
+- For sync: is "two of my own machines, same browser" the actual real
+  need, or does cross-browser sync (Firefox laptop ↔ Chrome desktop)
+  matter in practice? That alone would rule out `storage.sync` as a
+  long-term answer regardless of volume. Not urgent either way per the
+  Purpose/scope note above, but worth settling if it comes up.
