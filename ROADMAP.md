@@ -205,6 +205,45 @@ not a burden.
 
 ---
 
+## 5. Chrome Web Store private/unlisted publishing (remove the dev-mode nag)
+
+Not started. Chromium's "Developer mode + Load unpacked" (see README:
+"Chrome / Edge / other Chromium browsers") is already a *working*
+permanent install — unlike Firefox's temporary add-ons, it survives
+restarts with no signing step required. The only downside: Chrome
+periodically nags with a "Disable developer mode extensions" banner
+(dismissible, doesn't actually disable anything) as long as it's loaded
+this way.
+
+The fix, if the nag ever becomes annoying enough to bother with: publish
+to the Chrome Web Store with visibility set to **Private** (restricted to
+specific Google accounts you list) or **Unlisted** (installable by direct
+link, not searchable) rather than **Public**. Either keeps it out of the
+searchable store, same spirit as Firefox's unlisted self-distribution
+channel (item 4's `web-ext sign --channel=unlisted`).
+
+Requires:
+- A one-time $5 Chrome Web Store developer registration fee (per Google
+  account, not per extension).
+- Packaging + upload via the [Chrome Web Store Developer
+  Dashboard](https://chrome.google.com/webstore/devconsole) (or the
+  Chrome Web Store publish API for CI, if item 4's pipeline is ever
+  extended to also cover Chrome).
+- Google review — lighter for Private/Unlisted than a full Public
+  listing, but still a real review step, and can take longer than
+  Firefox's unlisted signing (usually a couple of minutes).
+- Bonus if it's ever done: native auto-update, same as any Chrome Web
+  Store extension — installed copies update themselves with no manual
+  reinstall, something item 4's Firefox path needs a whole CI pipeline to
+  replicate.
+
+**Decision: parked, not urgent.** The dev-mode nag is cosmetic, not
+functional — dismissing it doesn't disable the extension. Worth doing if
+Chrome/Edge becomes the daily-driver browser, or the nag gets genuinely
+annoying; not worth the $5 + review-queue wait otherwise.
+
+---
+
 ## Known limitations (deferred, not blocking)
 
 - **Same-machine, multiple-browser filename collision.** Running the
