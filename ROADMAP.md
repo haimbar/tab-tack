@@ -129,8 +129,15 @@ reasonably close to parity — but this still needs a Mac, Xcode, and for
 anything beyond a 7-day local test build, an Apple Developer account
 ($99/yr) plus notarization or App Store review.
 
-**Recommendation:** optional, gated on whether Safari is actually part of
-daily use — not worth the Mac/Xcode/Developer-account overhead otherwise.
+**Decision: parked, not planned soon.** The Mac/Xcode/Developer-account
+setup and $99/yr cost aren't worth it right now. Accepted fallback for
+Safari users in the meantime: open the `.md` file directly — it's
+readable (plain text; Safari has no built-in markdown rendering, so
+headings/formatting show as literal `##`/`**` characters) but not
+reliably clickable, since plain-text URLs generally aren't
+auto-linkified by the browser — and there's no add/edit/delete/sort UI
+without the extension. Good enough as a read-only stopgap; revisit only
+if Safari becomes part of daily use.
 
 ---
 
