@@ -175,6 +175,36 @@ if Safari becomes part of daily use.
 
 ---
 
+## 4. Automated build/sign/update pipeline (CI-driven releases)
+
+Not started. Now that it's permanently installed (signed `.xpi` via
+Firefox's unlisted self-distribution channel — see README: "Installing
+permanently on Firefox"), new commits don't reach the installed copy on
+their own: signing is a manual, per-release step (bump `manifest.json`
+version → `npm run sign` → reinstall the `.xpi`). Fine for occasional
+personal updates; would get old fast if this starts changing weekly, or
+if a few other people are running signed copies too and each needs a new
+file handed to them by hand.
+
+Real auto-update needs two things Firefox checks on its own: a
+`browser_specific_settings.gecko.update_url` in the manifest pointing to
+a hosted, versioned JSON update manifest, and each signed `.xpi`
+reachable at a stable URL. Both need somewhere to live — GitHub Releases
+(for the `.xpi` binaries) plus GitHub Pages (for the update-manifest
+JSON) are the natural fit given the repo's already on GitHub, driven by a
+GitHub Actions workflow (on push or tag) that runs `web-ext sign` with
+the AMO API key/secret stored as repo secrets, then republishes the
+update manifest pointing at the new file.
+
+**Decision: parked, not urgent.** Same reasoning as items 1-3: build this
+when the manual reinstall loop actually becomes a real annoyance
+(frequent releases, or several other people running signed copies who'd
+otherwise need a new `.xpi` handed to them each time), not preemptively.
+Until then, `npm run sign` + reinstall per release is a 30-second step,
+not a burden.
+
+---
+
 ## Known limitations (deferred, not blocking)
 
 - **Same-machine, multiple-browser filename collision.** Running the
