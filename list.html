@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Saved Tab Notes</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 16px 24px; color: #222; }
+  h1 { font-size: 18px; margin: 0 0 12px; }
+  .toolbar {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .toolbar input[type=text] {
+    padding: 5px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px;
+    min-width: 200px;
+  }
+  .toolbar select { padding: 5px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; }
+  .toolbar button {
+    padding: 5px 10px; font-size: 13px; cursor: pointer; border: 1px solid #2f4b6e;
+    background: #2f4b6e; color: white; border-radius: 4px;
+  }
+  .toolbar button:disabled { opacity: 0.5; cursor: default; }
+  .count { font-size: 12px; color: #666; margin-left: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: #666; }
+  tr:hover { background: #f7f9fb; }
+  .title-link { color: #2f4b6e; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .title-link:hover { text-decoration: underline; }
+  .url { color: #888; font-size: 11px; word-break: break-all; }
+  .meta { color: #555; font-size: 12px; }
+  .categories span {
+    display: inline-block; background: #e8eef5; color: #2f4b6e; border-radius: 3px;
+    padding: 1px 6px; margin: 1px 2px 1px 0; font-size: 11px;
+  }
+  .annotation { color: #444; font-size: 12px; white-space: pre-wrap; max-width: 260px; }
+  .empty { color: #888; padding: 24px; text-align: center; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: #2f4b6e; }
+  th.active { color: #2f4b6e; }
+  .sort-indicator { margin-left: 3px; }
+  .group-header {
+    background: #eef3f9; color: #2f4b6e; font-weight: 600; font-size: 12px;
+    padding: 6px 8px; border-bottom: 1px solid #d7e2ee;
+  }
+</style>
+</head>
+<body>
+  <h1>Saved Tab Notes</h1>
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Search title, URL, note...">
+    <select id="categoryFilter">
+      <option value="">All categories</option>
+    </select>
+    <button id="openSelected" disabled>Open selected in new tabs</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <table id="table">
+    <thead>
+      <tr>
+        <th style="width:24px;"><input type="checkbox" id="selectAll"></th>
+        <th>Title / URL</th>
+        <th id="thAuthor" class="sortable">Author / Date<span class="sort-indicator"></span></th>
+        <th id="thCategory" class="sortable" title="Click to group by category (items with multiple categories appear once per group)">Category<span class="sort-indicator"></span></th>
+        <th>Note</th>
+        <th id="thSaved" class="sortable">Saved<span class="sort-indicator"></span></th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty" style="display:none;">No saved pages yet.</div>
+
+  <script src="list.js"></script>
+</body>
+</html>
