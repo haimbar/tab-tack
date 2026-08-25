@@ -6,9 +6,10 @@ building the next thing.
 
 **Done:** private cross-machine sync via `browser.storage.sync` (README:
 "Cross-machine sync"), Chromium support (Chrome/Edge/etc., README:
-"Supported browsers"), a "Re-export markdown now" button, and a known,
-deliberately-deferred limitation (same-machine multi-browser filename
-collision — see below).
+"Supported browsers"), a "Re-export markdown now" button, JSON
+export/import for manual sharing and backup (README: "Export / import" —
+item 2's option C below), and a known, deliberately-deferred limitation
+(same-machine multi-browser filename collision — see below).
 
 **Not done:** everything else in this file.
 
@@ -81,17 +82,18 @@ band-aid. Until then: no action needed.
 
 ## 2. Sharing items with others (by name, or public)
 
-Not started. This is a different kind of feature from sync — "share by
-name" requires identifying another person and controlling their access,
-which the current local-only architecture has no concept of at all. Some
-form of GitHub-hosted or server-side piece is required no matter which
-option is chosen.
+**Option C is done** — see README: "Export / import." What's below is
+kept for the parked A/B options and the reasoning behind picking C
+first. "Share by name" (A) or "public" (B) would still require
+identifying another person and controlling their access, which the
+current local-only architecture has no concept of at all — some form of
+GitHub-hosted or server-side piece would be required for either.
 
 | Option | Complexity | Notes |
 |---|---|---|
 | A. Reuse GitHub (collaborators / Gists / Pages) | **Low-Medium** | No new backend; coarse-grained access |
 | B. Real backend with accounts + per-item ACLs | **High** | The "real" version of this feature; a genuine service to run |
-| C. Manual export (markdown/HTML snippet to send yourself) | **Very low** | Barely "sharing," more of a stopgap |
+| C. Manual export/import (JSON, URL-deduped) | **Very low** | **Done** — see README: "Export / import" |
 
 **A — GitHub-based.** "By name" = add someone as a collaborator on a
 private repo (secret Gists are really "unlisted," not identity-checked —
@@ -121,38 +123,31 @@ D1/KV, Supabase, Firebase, etc.). "Public" becomes a real hosted page;
   item on this whole roadmap by a wide margin — worth pausing on
   deliberately before committing, not drifting into.
 
-**C — manual export/import.** Select entries (some or all) → export as a
-JSON blob → send it however (email, text, etc.) → recipient uses an
-"Import" action that merges the blob into their own entries, skipping
-anything that's already there.
-- Pros: trivial, zero infrastructure, no accounts, works for the actual
-  use case (person-to-person, low frequency) rather than the "public
-  audience" case A/B are aimed at.
-- Cons: not really "sharing" in the connected/live sense — no revocation,
-  no per-viewer control, recipient has to take a manual step. Two people
-  can still create genuinely different entries for the same page (e.g.
-  different `id`s or edited notes) that dedup won't catch — see below.
-- Format: export as JSON (title/url/notes/category/etc.), not the
-  markdown file — markdown is for reading, JSON is what import parses
-  back reliably.
-- Dedup key: `normalizeUrl(e.url)` (already exists in `common.js`), not
-  the entry's `id` — two installs generate unrelated random ids for what
-  is conceptually "the same" saved page, so an id-based check would
-  import duplicates every time. On import, an entry whose normalized URL
-  already exists locally is skipped, not merged or overwritten — simplest
-  rule, matches "prevent duplicates."
+**C — manual export/import. Done** (2026-08-25) — see README: "Export /
+import" for user-facing behavior; `buildExportPayload`/`parseImportPayload`/
+`importEntries` in `common.js` for the implementation.
+- Turned out useful sooner than expected: built primarily to recover from
+  a `storage.sync` data-loss incident on a temporary/unsigned install (see
+  README's temporary-add-on caveat under "Cross-machine sync"), with
+  person-to-person sharing as the other intended use — both share the
+  same export/import mechanism.
+- Cons (unchanged from the original assessment): not really "sharing" in
+  the connected/live sense — no revocation, no per-viewer control,
+  recipient has to take a manual step. Two people can still create
+  genuinely different entries for the same page (e.g. edited notes) that
+  URL-based dedup won't catch — import always keeps the local copy and
+  skips the incoming one on a URL match, never merges field-by-field.
+- Format: JSON (title/url/author/date/categories/annotation/saved/
+  savedDisplay), not the markdown file — markdown is for reading, JSON is
+  what import parses back reliably.
+- Dedup key: `normalizeUrl(e.url)`, not the entry's `id` — two installs
+  generate unrelated random ids for what is conceptually "the same" saved
+  page, so an id-based check would import duplicates every time.
 
-**Decision: adopt C first, keep A/B parked.** Fits the actual use case
-(a personal deferred-reading queue, occasionally shared with one or two
-people) better than A or B, and is cheap enough to build without a
-separate deliberate go/no-go. Needs: a selection UI on `list.html`
-("select entries to export"), an export action producing the JSON blob,
-and an import action (paste or file) that merges with URL-based dedup as
-above. If a more connected/live version is ever needed, treat **B** as
-the deliberate, separate decision it already is, and consider bundling
-it with item 1 since it would subsume `storage.sync`/GitHub-sync
-entirely; **A** stays available if a lighter step up from C is wanted
-first.
+If a more connected/live version is ever needed, treat **B** as the
+deliberate, separate decision it already is, and consider bundling it
+with item 1 since it would subsume `storage.sync`/GitHub-sync entirely;
+**A** stays available if a lighter step up from C is wanted first.
 
 ---
 

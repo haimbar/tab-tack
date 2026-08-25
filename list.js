@@ -11,6 +11,11 @@ document.getElementById("search").addEventListener("input", render);
 document.getElementById("categoryFilter").addEventListener("change", render);
 document.getElementById("selectAll").addEventListener("change", onSelectAllChanged);
 document.getElementById("openSelected").addEventListener("click", openSelected);
+document.getElementById("exportSelected").addEventListener("click", exportSelected);
+document.getElementById("importBtn").addEventListener("click", () => {
+  document.getElementById("importFile").click();
+});
+document.getElementById("importFile").addEventListener("change", importFromFile);
 document.getElementById("reexport").addEventListener("click", reexportMarkdown);
 document.getElementById("thSaved").addEventListener("click", () => setSort("saved"));
 document.getElementById("thAuthor").addEventListener("click", () => setSort("author"));
@@ -454,14 +459,63 @@ function onSelectAllChanged(evt) {
 function updateOpenSelectedState() {
   const anyChecked = document.querySelectorAll(".row-select:checked").length > 0;
   document.getElementById("openSelected").disabled = !anyChecked;
+  document.getElementById("exportSelected").disabled = !anyChecked;
+}
+
+function selectedEntries() {
+  const checked = Array.from(document.querySelectorAll(".row-select:checked"));
+  const uniqueIds = new Set(checked.map((cb) => cb.dataset.id));
+  return allEntries.filter((e) => uniqueIds.has(e.id));
 }
 
 function openSelected() {
-  const checked = Array.from(document.querySelectorAll(".row-select:checked"));
-  const uniqueIds = new Set(checked.map((cb) => cb.dataset.id));
-  for (const id of uniqueIds) {
-    const entry = allEntries.find((e) => e.id === id);
-    if (entry && entry.url) browser.tabs.create({ url: entry.url });
+  for (const entry of selectedEntries()) {
+    if (entry.url) browser.tabs.create({ url: entry.url });
+  }
+}
+
+async function exportSelected() {
+  const btn = document.getElementById("exportSelected");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Exporting…";
+  try {
+    await exportEntriesToFile(selectedEntries());
+    btn.textContent = "Exported!";
+  } catch (err) {
+    console.error(err);
+    btn.textContent = "Export failed";
+  } finally {
+    setTimeout(() => {
+      btn.textContent = originalLabel;
+      updateOpenSelectedState();
+    }, 1500);
+  }
+}
+
+async function importFromFile(evt) {
+  const file = evt.target.files[0];
+  evt.target.value = ""; // allow re-selecting the same file later
+  if (!file) return;
+
+  const status = document.getElementById("importStatus");
+  status.style.color = "#2f4b6e";
+  status.textContent = "Importing…";
+
+  try {
+    const text = await file.text();
+    const parsed = parseImportPayload(text);
+    const { added, skipped } = await importEntries(parsed);
+
+    await reload();
+    render();
+    await writeMarkdownFile(allEntries);
+
+    status.textContent = `Imported ${added}, skipped ${skipped} already saved.`;
+  } catch (err) {
+    console.error(err);
+    status.style.color = "#b3261e";
+    status.textContent = "Import failed — not a valid Tab Tack export file.";
   }
 }
 

@@ -103,6 +103,26 @@ Each row has **Edit** and **Delete** buttons.
 Both actions write straight to the extension's storage and the markdown
 file; there's no separate "unsaved changes" state to lose track of.
 
+## Export / import
+
+Check the boxes on the entries you want (same checkboxes used for "Open
+selected in new tabs"), then **Export selected…** to save them as a JSON
+file — a native Save dialog lets you pick where, so you can attach it to
+an email or message. **Import…** loads a JSON file back in; entries whose
+URL you already have are skipped automatically, so importing the same
+file twice (or a file with some overlap) never creates duplicates.
+
+Two things this is good for:
+- **Sharing a subset of your list with someone else** who's also running
+  Tab Tack — they get an Import button on their end, same as you.
+- **Backup/restore**, independent of `storage.sync` — see the temporary-add-on
+  caveat below. Export "select all" periodically and keep the file
+  somewhere safe; Import brings everything back on a fresh install.
+
+Matching is by normalized URL (ignoring the `#fragment` and a trailing
+slash), not by any internal id — two installs never share an entry's id,
+so id-based matching would import duplicates every time.
+
 ## Cross-machine sync
 
 Saved entries and categories live in `browser.storage.sync` instead of
@@ -147,6 +167,14 @@ A few things worth knowing:
 - **View saved pages** refreshes live if new sync data arrives while it's
   open (e.g. you saved something from your other machine a moment ago) —
   no need to close and reopen it.
+- **This resilience assumes a real, signed-in sync account.** If you're
+  running this as a temporary/unsigned add-on (`about:debugging` → Load
+  Temporary Add-on — the normal way to run it during development, before
+  it's signed and permanently installed), `storage.sync` isn't guaranteed
+  to survive removing and reloading the extension, even with sync enabled.
+  Use **Export / import** below (export "select all" periodically) as a
+  real backup in that case — don't rely on `storage.sync` alone until the
+  extension is permanently installed.
 
 See [ROADMAP.md](ROADMAP.md) for what a higher-ceiling or cross-browser
 sync option would look like if this ever becomes limiting.

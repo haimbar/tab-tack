@@ -143,6 +143,93 @@ async function writeMarkdownFile(entries) {
   URL.revokeObjectURL(blobUrl);
 }
 
+// --- Export / import for manual sharing and backup ---------------------
+//
+// Exported as JSON (not markdown) so import can parse it back reliably.
+// Dedup on import matches by normalizeUrl(e.url), not the entry's id -
+// ids are randomly generated per install, so two people's copies of "the
+// same" saved page never share one.
+
+function buildExportPayload(entries) {
+  return {
+    format: "tab-tack-export",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    entries: entries.map((e) => ({
+      title: e.title || "",
+      url: e.url,
+      author: e.author || "",
+      date: e.date || "",
+      categories: e.categories || [],
+      annotation: e.annotation || "",
+      saved: e.saved || "",
+      savedDisplay: e.savedDisplay || ""
+    }))
+  };
+}
+
+async function exportEntriesToFile(entries) {
+  const payload = buildExportPayload(entries);
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const blobUrl = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  const downloadId = await browser.downloads.download({
+    url: blobUrl,
+    filename: `tab-tack-export-${stamp}.json`,
+    saveAs: true
+  });
+
+  await waitForDownloadComplete(downloadId);
+  URL.revokeObjectURL(blobUrl);
+}
+
+function parseImportPayload(jsonText) {
+  const data = JSON.parse(jsonText);
+  const entries = Array.isArray(data) ? data : data.entries;
+  if (!Array.isArray(entries)) throw new Error("Not a recognized Tab Tack export file.");
+  return entries.filter((e) => e && typeof e.url === "string" && e.url.trim());
+}
+
+async function importEntries(parsedEntries) {
+  const existing = await getAllEntries();
+  const existingUrls = new Set(existing.map((e) => normalizeUrl(e.url)));
+
+  let added = 0;
+  let skipped = 0;
+  const importedCategories = [];
+
+  for (const e of parsedEntries) {
+    const key = normalizeUrl(e.url);
+    if (existingUrls.has(key)) {
+      skipped++;
+      continue;
+    }
+    existingUrls.add(key);
+
+    await addEntryRecord({
+      title: e.title || "",
+      url: e.url,
+      author: e.author || "",
+      date: e.date || "",
+      categories: Array.isArray(e.categories) ? e.categories : [],
+      annotation: e.annotation || "",
+      saved: e.saved || new Date().toISOString(),
+      savedDisplay: e.savedDisplay || new Date().toLocaleString()
+    });
+    added++;
+    if (Array.isArray(e.categories)) importedCategories.push(...e.categories);
+  }
+
+  if (importedCategories.length > 0) {
+    const known = await getCategories();
+    await setCategories(mergeCategoryList(known, importedCategories));
+  }
+
+  return { added, skipped };
+}
+
 function waitForDownloadComplete(downloadId) {
   return new Promise((resolve) => {
     function listener(delta) {
