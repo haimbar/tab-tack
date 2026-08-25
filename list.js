@@ -431,7 +431,7 @@ async function saveEdit(id) {
     const updated = await updateEntryRecord(id, { title, url, author, date, categories, annotation });
     allEntries = allEntries.map((e) => (e.id === id ? updated : e));
 
-    masterCategories = mergeCategoryList(masterCategories, categories);
+    masterCategories = sortCategories(mergeCategoryList(masterCategories, categories));
     await setCategories(masterCategories);
 
     await writeMarkdownFile(allEntries);

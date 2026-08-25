@@ -33,9 +33,13 @@ async function getAllEntries() {
   return entryIds.map((id) => result[`entry_${id}`]).filter(Boolean);
 }
 
+function sortCategories(categories) {
+  return [...categories].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
 async function getCategories() {
   const { categories = [] } = await browser.storage.sync.get("categories");
-  return categories;
+  return sortCategories(categories);
 }
 
 async function setCategories(categories) {
