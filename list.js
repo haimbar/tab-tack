@@ -1,6 +1,6 @@
-let allEntries = []; // index = stable position in the storage array
+let allEntries = []; // array of entry records, each with a stable .id
 let masterCategories = [];
-let editingIndex = null;
+let editingId = null;
 
 let sortKey = "saved"; // "saved" | "author"
 let sortDir = "desc"; // "asc" | "desc"
@@ -18,13 +18,28 @@ document.getElementById("thCategory").addEventListener("click", () => {
   render();
 });
 
+// Refresh automatically when sync storage changes from elsewhere (e.g. an
+// entry added or edited on another machine) while this page is open.
+browser.storage.onChanged.addListener((_changes, areaName) => {
+  if (areaName !== "sync") return;
+  if (editingId !== null) return; // don't yank the form out from under an in-progress edit
+  reload().then(render);
+});
+
 async function init() {
-  const { entries = [], categories = [] } = await browser.storage.local.get(["entries", "categories"]);
-  allEntries = entries;
-  masterCategories = categories;
+  await migrateLegacyStorage();
+
+  allEntries = await getAllEntries();
+  masterCategories = await getCategories();
 
   refreshCategoryFilterOptions();
   render();
+}
+
+async function reload() {
+  allEntries = await getAllEntries();
+  masterCategories = await getCategories();
+  refreshCategoryFilterOptions();
 }
 
 function refreshCategoryFilterOptions() {
@@ -55,15 +70,13 @@ function setSort(key) {
   render();
 }
 
-function compareEntries(ai, bi) {
-  const a = allEntries[ai];
-  const b = allEntries[bi];
+function compareEntries(a, b) {
   let cmp = 0;
 
   if (sortKey === "author") {
     if (!a.author && b.author) return 1;
     if (a.author && !b.author) return -1;
-    cmp = a.author.localeCompare(b.author, undefined, { sensitivity: "base" });
+    cmp = (a.author || "").localeCompare(b.author || "", undefined, { sensitivity: "base" });
   } else {
     // saved (ISO timestamps sort correctly as strings)
     cmp = (a.saved || "").localeCompare(b.saved || "");
@@ -72,32 +85,29 @@ function compareEntries(ai, bi) {
   return sortDir === "asc" ? cmp : -cmp;
 }
 
-function filteredIndices() {
+function filteredEntries() {
   const search = document.getElementById("search").value.trim().toLowerCase();
   const catFilter = document.getElementById("categoryFilter").value.toLowerCase();
 
-  return allEntries
-    .map((_, i) => i)
-    .filter((i) => {
-      const e = allEntries[i];
-      const haystack = `${e.title || ""} ${e.url || ""} ${e.annotation || ""}`.toLowerCase();
-      if (search && !haystack.includes(search)) return false;
-      if (catFilter && !(e.categories || []).some((c) => c.toLowerCase() === catFilter)) return false;
-      return true;
-    });
+  return allEntries.filter((e) => {
+    const haystack = `${e.title || ""} ${e.url || ""} ${e.annotation || ""}`.toLowerCase();
+    if (search && !haystack.includes(search)) return false;
+    if (catFilter && !(e.categories || []).some((c) => c.toLowerCase() === catFilter)) return false;
+    return true;
+  });
 }
 
 function render() {
   const rowsContainer = document.getElementById("rows");
   rowsContainer.innerHTML = "";
 
-  const filtered = filteredIndices();
+  const filtered = filteredEntries();
 
   if (groupByCategory) {
     renderGrouped(filtered, rowsContainer);
   } else {
     const sorted = [...filtered].sort(compareEntries);
-    for (const i of sorted) rowsContainer.appendChild(buildRowOrEdit(i));
+    for (const e of sorted) rowsContainer.appendChild(buildRowOrEdit(e));
   }
 
   const isEmpty = filtered.length === 0;
@@ -110,14 +120,13 @@ function render() {
 }
 
 function renderGrouped(filtered, rowsContainer) {
-  const groups = new Map(); // lowercase key -> { label, indices: [] }
-  for (const i of filtered) {
-    const e = allEntries[i];
+  const groups = new Map(); // lowercase key -> { label, entries: [] }
+  for (const e of filtered) {
     const cats = e.categories && e.categories.length ? e.categories : ["Uncategorized"];
     for (const c of cats) {
       const key = c.toLowerCase();
-      if (!groups.has(key)) groups.set(key, { label: c, indices: [] });
-      groups.get(key).indices.push(i);
+      if (!groups.has(key)) groups.set(key, { label: c, entries: [] });
+      groups.get(key).entries.push(e);
     }
   }
 
@@ -129,14 +138,14 @@ function renderGrouped(filtered, rowsContainer) {
 
   for (const key of groupKeys) {
     const group = groups.get(key);
-    rowsContainer.appendChild(buildGroupHeaderRow(group.label, group.indices.length));
-    const sorted = [...group.indices].sort(compareEntries);
-    for (const i of sorted) rowsContainer.appendChild(buildRowOrEdit(i));
+    rowsContainer.appendChild(buildGroupHeaderRow(group.label, group.entries.length));
+    const sorted = [...group.entries].sort(compareEntries);
+    for (const e of sorted) rowsContainer.appendChild(buildRowOrEdit(e));
   }
 }
 
-function buildRowOrEdit(index) {
-  return index === editingIndex ? buildEditRow(index) : buildRow(index, allEntries[index]);
+function buildRowOrEdit(entry) {
+  return entry.id === editingId ? buildEditRow(entry) : buildRow(entry);
 }
 
 function buildGroupHeaderRow(label, count) {
@@ -165,14 +174,14 @@ function updateHeaderIndicators() {
   thCategory.classList.toggle("active", groupByCategory);
 }
 
-function buildRow(index, e) {
+function buildRow(e) {
   const tr = document.createElement("tr");
 
   const selectTd = document.createElement("td");
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.className = "row-select";
-  checkbox.dataset.index = String(index);
+  checkbox.dataset.id = e.id;
   checkbox.addEventListener("change", updateOpenSelectedState);
   selectTd.appendChild(checkbox);
   tr.appendChild(selectTd);
@@ -225,7 +234,7 @@ function buildRow(index, e) {
   editBtn.textContent = "Edit";
   editBtn.addEventListener("click", () => {
     groupByCategory = false;
-    editingIndex = index;
+    editingId = e.id;
     render();
   });
   actionsTd.appendChild(editBtn);
@@ -233,7 +242,7 @@ function buildRow(index, e) {
   const deleteBtn = document.createElement("button");
   deleteBtn.className = "row-btn danger";
   deleteBtn.textContent = "Delete";
-  deleteBtn.addEventListener("click", () => deleteEntry(index));
+  deleteBtn.addEventListener("click", () => deleteEntry(e.id));
   actionsTd.appendChild(deleteBtn);
 
   tr.appendChild(actionsTd);
@@ -241,21 +250,21 @@ function buildRow(index, e) {
   return tr;
 }
 
-async function deleteEntry(index) {
-  const e = allEntries[index];
+async function deleteEntry(id) {
+  const e = allEntries.find((x) => x.id === id);
+  if (!e) return;
   const label = e.title || e.url;
   if (!confirm(`Delete "${label}"? This cannot be undone.`)) return;
 
-  allEntries.splice(index, 1);
-  editingIndex = null; // indices shift after splice; drop any in-progress edit to avoid a stale reference
+  await removeEntryRecord(id);
+  allEntries = allEntries.filter((x) => x.id !== id);
+  if (editingId === id) editingId = null;
 
-  await browser.storage.local.set({ entries: allEntries });
   await writeMarkdownFile(allEntries);
   render();
 }
 
-function buildEditRow(index) {
-  const e = allEntries[index];
+function buildEditRow(e) {
   const tr = document.createElement("tr");
   const td = document.createElement("td");
   td.colSpan = 7;
@@ -321,12 +330,12 @@ function buildEditRow(index) {
   const saveBtn = document.createElement("button");
   saveBtn.id = "editSave";
   saveBtn.textContent = "Save changes";
-  saveBtn.addEventListener("click", () => saveEdit(index));
+  saveBtn.addEventListener("click", () => saveEdit(e.id));
   const cancelBtn = document.createElement("button");
   cancelBtn.id = "editCancel";
   cancelBtn.textContent = "Cancel";
   cancelBtn.addEventListener("click", () => {
-    editingIndex = null;
+    editingId = null;
     render();
   });
   const status = document.createElement("div");
@@ -395,7 +404,7 @@ function collectEditCategories() {
   return merged;
 }
 
-async function saveEdit(index) {
+async function saveEdit(id) {
   const title = document.getElementById("editTitle").value.trim();
   const url = document.getElementById("editUrl").value.trim();
   const author = document.getElementById("editAuthor").value.trim();
@@ -410,22 +419,29 @@ async function saveEdit(index) {
   }
 
   const duplicate = allEntries.some(
-    (e, i) => i !== index && normalizeUrl(e.url) === normalizeUrl(url)
+    (e) => e.id !== id && normalizeUrl(e.url) === normalizeUrl(url)
   );
   if (duplicate) {
     status.textContent = "Another saved entry already uses this URL.";
     return;
   }
 
-  allEntries[index] = { ...allEntries[index], title, url, author, date, categories, annotation };
-  masterCategories = mergeCategoryList(masterCategories, categories);
+  try {
+    const updated = await updateEntryRecord(id, { title, url, author, date, categories, annotation });
+    allEntries = allEntries.map((e) => (e.id === id ? updated : e));
 
-  await browser.storage.local.set({ entries: allEntries, categories: masterCategories });
-  await writeMarkdownFile(allEntries);
+    masterCategories = mergeCategoryList(masterCategories, categories);
+    await setCategories(masterCategories);
 
-  refreshCategoryFilterOptions();
-  editingIndex = null;
-  render();
+    await writeMarkdownFile(allEntries);
+
+    refreshCategoryFilterOptions();
+    editingId = null;
+    render();
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Couldn't save — sync storage may be full.";
+  }
 }
 
 function onSelectAllChanged(evt) {
@@ -441,9 +457,9 @@ function updateOpenSelectedState() {
 
 function openSelected() {
   const checked = Array.from(document.querySelectorAll(".row-select:checked"));
-  const uniqueIndices = new Set(checked.map((cb) => Number(cb.dataset.index)));
-  for (const i of uniqueIndices) {
-    const entry = allEntries[i];
+  const uniqueIds = new Set(checked.map((cb) => cb.dataset.id));
+  for (const id of uniqueIds) {
+    const entry = allEntries.find((e) => e.id === id);
     if (entry && entry.url) browser.tabs.create({ url: entry.url });
   }
 }

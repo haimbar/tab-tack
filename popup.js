@@ -6,11 +6,13 @@ document.getElementById("viewSaved").addEventListener("click", (e) => {
 });
 
 async function init() {
+  await migrateLegacyStorage();
+
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   document.getElementById("title").value = tab.title || "";
   document.getElementById("url").value = tab.url || "";
 
-  const { categories = [] } = await browser.storage.local.get("categories");
+  const categories = await getCategories();
   renderCategoryCheckboxes(categories);
 
   try {
@@ -98,7 +100,7 @@ async function saveEntry() {
   if (!entry.url) return;
 
   const status = document.getElementById("status");
-  const { entries = [] } = await browser.storage.local.get("entries");
+  const entries = await getAllEntries();
 
   const duplicate = entries.some((e) => normalizeUrl(e.url) === normalizeUrl(entry.url));
   if (duplicate) {
@@ -111,15 +113,22 @@ async function saveEntry() {
   const saveButton = document.getElementById("save");
   saveButton.disabled = true;
 
-  entries.push(entry);
+  try {
+    const record = await addEntryRecord(entry);
+    entries.push(record);
 
-  const { categories: knownCategories = [] } = await browser.storage.local.get("categories");
-  const updatedCategories = mergeCategoryList(knownCategories, categories);
+    const knownCategories = await getCategories();
+    await setCategories(mergeCategoryList(knownCategories, categories));
 
-  await browser.storage.local.set({ entries, categories: updatedCategories });
+    await writeMarkdownFile(entries);
 
-  await writeMarkdownFile(entries);
-
-  status.textContent = "Saved!";
-  setTimeout(() => window.close(), 500);
+    status.style.color = "green";
+    status.textContent = "Saved!";
+    setTimeout(() => window.close(), 500);
+  } catch (err) {
+    console.error(err);
+    status.style.color = "#b3261e";
+    status.textContent = "Couldn't save — sync storage may be full (see Options).";
+    saveButton.disabled = false;
+  }
 }
