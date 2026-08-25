@@ -1,4 +1,4 @@
-# Tab Notes to Markdown
+# Tab Tack
 
 A small browser extension. Click the toolbar button on any page to save its
 title, URL, (auto-detected) author/date, the time you saved it, and your own
@@ -36,8 +36,8 @@ another.
   (kept in the extension's synced storage — see **Cross-machine sync**
   below) and the *entire* file is re-written to your Downloads folder,
   overwriting the previous version.
-- Default output file: `Downloads/tab-notes.md`. Change the filename (or use
-  a subfolder, e.g. `notes/tab-notes.md`) via the extension's Options page
+- Default output file: `Downloads/tab-tack.md`. Change the filename (or use
+  a subfolder, e.g. `notes/tab-tack.md`) via the extension's Options page
   (right-click the toolbar icon → Manage Extension → Preferences).
 
 Each entry looks like:

@@ -112,7 +112,7 @@ function mergeCategoryList(known, additions) {
 }
 
 function renderMarkdown(entries) {
-  let md = "# Tab Notes\n\n";
+  let md = "# Tab Tack\n\n";
   for (const e of entries) {
     md += `## ${e.title || e.url}\n`;
     md += `- **URL:** ${e.url}\n`;
@@ -130,7 +130,7 @@ async function writeMarkdownFile(entries) {
   const md = renderMarkdown(entries);
   const blob = new Blob([md], { type: "text/markdown" });
   const blobUrl = URL.createObjectURL(blob);
-  const { filename = "tab-notes.md" } = await browser.storage.local.get("filename");
+  const { filename = "tab-tack.md" } = await browser.storage.local.get("filename");
 
   const downloadId = await browser.downloads.download({
     url: blobUrl,
