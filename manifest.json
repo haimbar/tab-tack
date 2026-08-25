@@ -5,7 +5,7 @@
   "description": "Click the toolbar button to save the current tab's title, URL, and your own annotation to a running markdown file.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "tab-tack@haim.local",
+      "id": "tab-notes-md@haim.local",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
         "required": ["none"]
