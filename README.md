@@ -64,6 +64,20 @@ This list is read from the extension's own storage (the same data used to
 generate the markdown file), not from the `.md` file itself — so it stays
 in sync even before you've saved a new entry.
 
+## Editing and deleting saved entries
+
+Each row has **Edit** and **Delete** buttons.
+
+- **Edit** turns the row into a form (title, URL, author, date, categories,
+  note) in place. Save re-checks for URL duplicates against your other
+  entries, updates storage, and re-writes the markdown file. Cancel discards
+  the changes.
+- **Delete** asks for confirmation, then removes the entry from storage and
+  re-writes the markdown file — the file no longer contains that entry.
+
+Both actions write straight to the extension's storage and the markdown
+file; there's no separate "unsaved changes" state to lose track of.
+
 ## Why it re-writes the whole file instead of appending
 
 Firefox extensions can't read/write arbitrary files on disk for security

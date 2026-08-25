@@ -1,4 +1,6 @@
 let allEntries = []; // index = stable position in the storage array
+let masterCategories = [];
+let editingIndex = null;
 
 let sortKey = "saved"; // "saved" | "author"
 let sortDir = "desc"; // "asc" | "desc"
@@ -19,16 +21,27 @@ document.getElementById("thCategory").addEventListener("click", () => {
 async function init() {
   const { entries = [], categories = [] } = await browser.storage.local.get(["entries", "categories"]);
   allEntries = entries;
+  masterCategories = categories;
 
+  refreshCategoryFilterOptions();
+  render();
+}
+
+function refreshCategoryFilterOptions() {
   const catSelect = document.getElementById("categoryFilter");
-  for (const cat of categories) {
+  const current = catSelect.value;
+  catSelect.innerHTML = "";
+  const allOpt = document.createElement("option");
+  allOpt.value = "";
+  allOpt.textContent = "All categories";
+  catSelect.appendChild(allOpt);
+  for (const cat of masterCategories) {
     const opt = document.createElement("option");
     opt.value = cat;
     opt.textContent = cat;
     catSelect.appendChild(opt);
   }
-
-  render();
+  catSelect.value = current;
 }
 
 function setSort(key) {
@@ -84,7 +97,7 @@ function render() {
     renderGrouped(filtered, rowsContainer);
   } else {
     const sorted = [...filtered].sort(compareEntries);
-    for (const i of sorted) rowsContainer.appendChild(buildRow(i, allEntries[i]));
+    for (const i of sorted) rowsContainer.appendChild(buildRowOrEdit(i));
   }
 
   const isEmpty = filtered.length === 0;
@@ -118,14 +131,18 @@ function renderGrouped(filtered, rowsContainer) {
     const group = groups.get(key);
     rowsContainer.appendChild(buildGroupHeaderRow(group.label, group.indices.length));
     const sorted = [...group.indices].sort(compareEntries);
-    for (const i of sorted) rowsContainer.appendChild(buildRow(i, allEntries[i]));
+    for (const i of sorted) rowsContainer.appendChild(buildRowOrEdit(i));
   }
+}
+
+function buildRowOrEdit(index) {
+  return index === editingIndex ? buildEditRow(index) : buildRow(index, allEntries[index]);
 }
 
 function buildGroupHeaderRow(label, count) {
   const tr = document.createElement("tr");
   const td = document.createElement("td");
-  td.colSpan = 6;
+  td.colSpan = 7;
   td.className = "group-header";
   td.textContent = `${label} (${count})`;
   tr.appendChild(td);
@@ -200,7 +217,215 @@ function buildRow(index, e) {
   savedTd.textContent = e.savedDisplay || e.saved || "";
   tr.appendChild(savedTd);
 
+  const actionsTd = document.createElement("td");
+  actionsTd.className = "actions";
+
+  const editBtn = document.createElement("button");
+  editBtn.className = "row-btn";
+  editBtn.textContent = "Edit";
+  editBtn.addEventListener("click", () => {
+    groupByCategory = false;
+    editingIndex = index;
+    render();
+  });
+  actionsTd.appendChild(editBtn);
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "row-btn danger";
+  deleteBtn.textContent = "Delete";
+  deleteBtn.addEventListener("click", () => deleteEntry(index));
+  actionsTd.appendChild(deleteBtn);
+
+  tr.appendChild(actionsTd);
+
   return tr;
+}
+
+async function deleteEntry(index) {
+  const e = allEntries[index];
+  const label = e.title || e.url;
+  if (!confirm(`Delete "${label}"? This cannot be undone.`)) return;
+
+  allEntries.splice(index, 1);
+  editingIndex = null; // indices shift after splice; drop any in-progress edit to avoid a stale reference
+
+  await browser.storage.local.set({ entries: allEntries });
+  await writeMarkdownFile(allEntries);
+  render();
+}
+
+function buildEditRow(index) {
+  const e = allEntries[index];
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = 7;
+  td.className = "edit-cell";
+
+  const form = document.createElement("div");
+  form.className = "edit-form";
+
+  function field(label, id, value) {
+    const wrap = document.createElement("div");
+    const lab = document.createElement("label");
+    lab.setAttribute("for", id);
+    lab.textContent = label;
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = id;
+    input.value = value || "";
+    wrap.appendChild(lab);
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  const titleField = field("Title", "editTitle", e.title);
+  const urlField = field("URL", "editUrl", e.url);
+  const authorField = field("Author", "editAuthor", e.author);
+  const dateField = field("Publish date", "editDate", e.date);
+  form.appendChild(titleField);
+  form.appendChild(urlField);
+  form.appendChild(authorField);
+  form.appendChild(dateField);
+
+  const catWrap = document.createElement("div");
+  catWrap.className = "full";
+  const catLabel = document.createElement("label");
+  catLabel.textContent = "Categories";
+  const catList = document.createElement("div");
+  catList.id = "editCategoryList";
+  renderEditCategoryCheckboxes(catList, e.categories || []);
+  const newCat = document.createElement("input");
+  newCat.type = "text";
+  newCat.id = "editNewCategories";
+  newCat.placeholder = "Add new (comma-separated)";
+  newCat.style.marginTop = "4px";
+  catWrap.appendChild(catLabel);
+  catWrap.appendChild(catList);
+  catWrap.appendChild(newCat);
+  form.appendChild(catWrap);
+
+  const noteWrap = document.createElement("div");
+  noteWrap.className = "full";
+  const noteLabel = document.createElement("label");
+  noteLabel.setAttribute("for", "editAnnotation");
+  noteLabel.textContent = "Your note";
+  const noteInput = document.createElement("textarea");
+  noteInput.id = "editAnnotation";
+  noteInput.value = e.annotation || "";
+  noteWrap.appendChild(noteLabel);
+  noteWrap.appendChild(noteInput);
+  form.appendChild(noteWrap);
+
+  const actionsWrap = document.createElement("div");
+  actionsWrap.className = "edit-actions";
+  const saveBtn = document.createElement("button");
+  saveBtn.id = "editSave";
+  saveBtn.textContent = "Save changes";
+  saveBtn.addEventListener("click", () => saveEdit(index));
+  const cancelBtn = document.createElement("button");
+  cancelBtn.id = "editCancel";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.addEventListener("click", () => {
+    editingIndex = null;
+    render();
+  });
+  const status = document.createElement("div");
+  status.className = "edit-status";
+  status.id = "editStatus";
+  actionsWrap.appendChild(saveBtn);
+  actionsWrap.appendChild(cancelBtn);
+  actionsWrap.appendChild(status);
+  form.appendChild(actionsWrap);
+
+  td.appendChild(form);
+  tr.appendChild(td);
+  return tr;
+}
+
+function renderEditCategoryCheckboxes(container, selected) {
+  container.innerHTML = "";
+  const selectedLower = new Set(selected.map((c) => c.toLowerCase()));
+  if (masterCategories.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+    empty.textContent = "No categories yet — add one below.";
+    container.appendChild(empty);
+    return;
+  }
+  for (const cat of masterCategories) {
+    const row = document.createElement("div");
+    row.className = "cat-row";
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.value = cat;
+    checkbox.id = "editCat-" + cat;
+    checkbox.checked = selectedLower.has(cat.toLowerCase());
+
+    const label = document.createElement("label");
+    label.setAttribute("for", checkbox.id);
+    label.textContent = cat;
+
+    row.appendChild(checkbox);
+    row.appendChild(label);
+    container.appendChild(row);
+  }
+}
+
+function collectEditCategories() {
+  const checked = Array.from(
+    document.querySelectorAll("#editCategoryList input[type=checkbox]:checked")
+  ).map((cb) => cb.value);
+
+  const typed = document
+    .getElementById("editNewCategories")
+    .value.split(",")
+    .map((c) => c.trim())
+    .filter((c) => c.length > 0);
+
+  const merged = [];
+  const seen = new Set();
+  for (const cat of [...checked, ...typed]) {
+    const key = cat.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(cat);
+    }
+  }
+  return merged;
+}
+
+async function saveEdit(index) {
+  const title = document.getElementById("editTitle").value.trim();
+  const url = document.getElementById("editUrl").value.trim();
+  const author = document.getElementById("editAuthor").value.trim();
+  const date = document.getElementById("editDate").value.trim();
+  const categories = collectEditCategories();
+  const annotation = document.getElementById("editAnnotation").value.trim();
+  const status = document.getElementById("editStatus");
+
+  if (!url) {
+    status.textContent = "URL is required.";
+    return;
+  }
+
+  const duplicate = allEntries.some(
+    (e, i) => i !== index && normalizeUrl(e.url) === normalizeUrl(url)
+  );
+  if (duplicate) {
+    status.textContent = "Another saved entry already uses this URL.";
+    return;
+  }
+
+  allEntries[index] = { ...allEntries[index], title, url, author, date, categories, annotation };
+  masterCategories = mergeCategoryList(masterCategories, categories);
+
+  await browser.storage.local.set({ entries: allEntries, categories: masterCategories });
+  await writeMarkdownFile(allEntries);
+
+  refreshCategoryFilterOptions();
+  editingIndex = null;
+  render();
 }
 
 function onSelectAllChanged(evt) {
