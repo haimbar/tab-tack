@@ -1,10 +1,16 @@
 # Roadmap: sync, sharing, cross-browser
 
-Planning notes only — nothing here is implemented yet. Written to compare
-options before committing to an approach. Current architecture recap: all
-data lives in `browser.storage.local` (entries + categories); the markdown
-file is a derived export written via `downloads.download`; there is no
-network code, no accounts, and no server anywhere in the extension today.
+Planning notes for what's still ahead. **Status: items 1A (`storage.sync`)
+and 3a (Chromium support via `webextension-polyfill`) are now implemented**
+— see the README for how they work. The options/pros/cons analysis below
+is kept as originally written for context on why those were picked first;
+everything under items 1B/1C, 2, and 3b is still just planning, not
+implemented.
+
+Current architecture recap: entries/categories live in `browser.storage.sync`
+(one key per entry); the markdown file is a derived export written via
+`downloads.download`; there is no backend, no accounts, and no server
+anywhere in the extension.
 
 These three goals are not equally sized. (1) and (3) are compatibility/
 plumbing work on top of what exists. (2) is a different kind of project —
@@ -186,6 +192,19 @@ lowest cost). Treat **3b** as its own later decision, gated on whether
 Safari is actually part of your daily use.
 
 ---
+
+## Known limitations (deferred, not blocking)
+
+- **Same-machine, multiple-browser filename collision.** Now that both
+  Firefox and Chrome/Edge are supported, running the extension in two
+  browsers on one machine means each has its own separate `storage.sync`
+  data (sync doesn't bridge browsers — see item 1 above), but by default
+  both still write their markdown export to the same
+  `~/Downloads/tab-notes.md`, so whichever browser saves last overwrites
+  the other's file. Fix would be trivial (a per-browser default filename
+  in Options), but deliberately not done: most users, including the
+  primary user of this extension, don't switch browsers often enough for
+  this to matter in practice. Revisit if that changes.
 
 ## Suggested overall order
 

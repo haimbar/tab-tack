@@ -80,6 +80,9 @@ list of everything you've saved (newest first). From there you can:
   can belong to more than one category, it appears once per matching group
   (not just once overall). Items with no category land in an "Uncategorized"
   group. Click it again to return to the flat sorted list.
+- **Re-export markdown now** rewrites the `.md` file immediately from
+  what's currently saved — useful if the file was deleted or moved; see
+  below.
 
 This list is read from the extension's own synced storage (the same data
 used to generate the markdown file), not from the `.md` file itself — so it
@@ -113,6 +116,13 @@ signed into *your* account, there's no third-party server involved.
 
 A few things worth knowing:
 
+- **This also makes your data safe against local loss.** Because entries
+  live in `storage.sync`, they're stored off-machine by the browser
+  vendor's own sync infrastructure (Mozilla's servers for Firefox,
+  Google's for Chrome/Edge), not just on one disk. Deleting the browser
+  profile, wiping the machine, or losing the `.md` file in a Downloads
+  cleanup doesn't lose your saved pages — reinstalling the extension and
+  signing back into the same synced account brings them all back.
 - **This does not bridge browsers.** Firefox syncs with other Firefox
   installs via your Firefox Account; Chrome/Edge sync with other
   Chromium installs via your Google Account. A page saved in Firefox
@@ -140,6 +150,15 @@ A few things worth knowing:
 
 See [ROADMAP.md](ROADMAP.md) for what a higher-ceiling or cross-browser
 sync option would look like if this ever becomes limiting.
+
+## If the markdown file gets deleted (e.g. a Downloads cleanup)
+
+The `.md` file is a disposable, regenerable *export* — the real data is
+`storage.sync` (see above), which already survives a Downloads-folder
+wipe untouched. If the file itself goes missing, click **Re-export
+markdown now** at the top of **View saved pages** to rewrite it from
+what's currently saved — no data is actually lost, you just need to
+regenerate the file.
 
 ## Why it re-writes the whole file instead of appending
 

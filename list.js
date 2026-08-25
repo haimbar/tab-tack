@@ -11,6 +11,7 @@ document.getElementById("search").addEventListener("input", render);
 document.getElementById("categoryFilter").addEventListener("change", render);
 document.getElementById("selectAll").addEventListener("change", onSelectAllChanged);
 document.getElementById("openSelected").addEventListener("click", openSelected);
+document.getElementById("reexport").addEventListener("click", reexportMarkdown);
 document.getElementById("thSaved").addEventListener("click", () => setSort("saved"));
 document.getElementById("thAuthor").addEventListener("click", () => setSort("author"));
 document.getElementById("thCategory").addEventListener("click", () => {
@@ -461,5 +462,24 @@ function openSelected() {
   for (const id of uniqueIds) {
     const entry = allEntries.find((e) => e.id === id);
     if (entry && entry.url) browser.tabs.create({ url: entry.url });
+  }
+}
+
+async function reexportMarkdown() {
+  const btn = document.getElementById("reexport");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Exporting…";
+  try {
+    await writeMarkdownFile(allEntries);
+    btn.textContent = "Exported!";
+  } catch (err) {
+    console.error(err);
+    btn.textContent = "Export failed";
+  } finally {
+    setTimeout(() => {
+      btn.textContent = originalLabel;
+      btn.disabled = false;
+    }, 1500);
   }
 }
