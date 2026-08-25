@@ -121,17 +121,38 @@ D1/KV, Supabase, Firebase, etc.). "Public" becomes a real hosted page;
   item on this whole roadmap by a wide margin — worth pausing on
   deliberately before committing, not drifting into.
 
-**C — manual export.** Select entries → generate a markdown snippet or a
-small standalone HTML file → send it yourself.
-- Pros: trivial, zero infrastructure.
-- Cons: not really "sharing" in the connected sense — a stopgap.
+**C — manual export/import.** Select entries (some or all) → export as a
+JSON blob → send it however (email, text, etc.) → recipient uses an
+"Import" action that merges the blob into their own entries, skipping
+anything that's already there.
+- Pros: trivial, zero infrastructure, no accounts, works for the actual
+  use case (person-to-person, low frequency) rather than the "public
+  audience" case A/B are aimed at.
+- Cons: not really "sharing" in the connected/live sense — no revocation,
+  no per-viewer control, recipient has to take a manual step. Two people
+  can still create genuinely different entries for the same page (e.g.
+  different `id`s or edited notes) that dedup won't catch — see below.
+- Format: export as JSON (title/url/notes/category/etc.), not the
+  markdown file — markdown is for reading, JSON is what import parses
+  back reliably.
+- Dedup key: `normalizeUrl(e.url)` (already exists in `common.js`), not
+  the entry's `id` — two installs generate unrelated random ids for what
+  is conceptually "the same" saved page, so an id-based check would
+  import duplicates every time. On import, an entry whose normalized URL
+  already exists locally is skipped, not merged or overwritten — simplest
+  rule, matches "prevent duplicates."
 
-**Decision: parked, not urgent.** Consistent with the actual use case
-(a personal deferred-reading queue, not a collaboration tool) — sharing
-isn't a near-term need. If it becomes one: ship **A** first, cheap and
-reuses what's already in place. Treat **B** as a deliberate, separate
-decision, and consider bundling it with item 1 if it's ever built, since
-it would subsume `storage.sync`/GitHub-sync entirely.
+**Decision: adopt C first, keep A/B parked.** Fits the actual use case
+(a personal deferred-reading queue, occasionally shared with one or two
+people) better than A or B, and is cheap enough to build without a
+separate deliberate go/no-go. Needs: a selection UI on `list.html`
+("select entries to export"), an export action producing the JSON blob,
+and an import action (paste or file) that merges with URL-based dedup as
+above. If a more connected/live version is ever needed, treat **B** as
+the deliberate, separate decision it already is, and consider bundling
+it with item 1 since it would subsume `storage.sync`/GitHub-sync
+entirely; **A** stays available if a lighter step up from C is wanted
+first.
 
 ---
 
@@ -165,7 +186,7 @@ if Safari becomes part of daily use.
   extension in two browsers on one machine means each has its own
   separate `storage.sync` data (sync doesn't bridge browsers — see item
   1), but by default both still write their markdown export to the same
-  `~/Downloads/tab-notes.md`, so whichever browser saves last overwrites
+  `~/Downloads/tab-tack.md`, so whichever browser saves last overwrites
   the other's file. Fix would be trivial (a per-browser default filename
   in Options), but deliberately not done: most users, including the
   primary user of this extension, don't switch browsers often enough for
@@ -178,3 +199,45 @@ if Safari becomes part of daily use.
   matter in practice? That alone would rule out `storage.sync` as a
   long-term answer regardless of volume. Not urgent either way per the
   Purpose/scope note above, but worth settling if it comes up.
+
+
+## Similar Add-ons
+
+Checked against this project's actual feature set (per-URL notes, categories,
+markdown export, cross-machine sync, no forced account, planned
+export/import sharing — see item 2):
+
+| Extension | Notes on page | Categories/tags | Export | Sync | Account |
+|---|---|---|---|---|---|
+| [StashRead](https://addons.mozilla.org/en-US/firefox/addon/stashread/) | No (reader-view saving, not annotation) | Yes (tags) | EPUB + JSON backup | No | None required |
+| [Cairn](https://addons.mozilla.org/en-US/firefox/addon/cairn/) | Yes | Yes (tags + nested collections) | JSON export/import | No | None required |
+| [Notefox / websites-notes](https://addons.mozilla.org/en-US/firefox/addon/websites-notes/) | Yes | Yes | Yes, format unspecified | Optional, requires their account | Optional |
+| [Tab Notes](https://addons.mozilla.org/en-US/firefox/addon/tab-notes/) (new-tab notepad) | No — one note per new tab, not per page | No | No | No | None |
+| [TabNotes / leave-notes-on-any-page](https://addons.mozilla.org/en-US/firefox/addon/leave-notes-on-any-page/) | Yes | No | No | Yes, via Firefox's built-in sync | None (rides Firefox sync) |
+| [Notes by Firefox](https://addons.mozilla.org/en-US/firefox/addon/notes-by-firefox/) | Sidebar notes while browsing | Unclear | Unclear | Yes, requires signing into a Firefox Account | Required for sync |
+| [TabMark](https://addons.mozilla.org/en-US/firefox/addon/tabmark/) | No — saves a whole window's open tabs under a title, not per-page annotation | No | No | No | None required |
+
+**Closest overall: Cairn** — real per-page notes, tags/collections, no
+account, and it already does JSON export/import, close to what item 2's
+option C specs. Missing vs. this project: no cross-device sync (item 1
+still unsolved), and export is JSON only (no markdown, so the "Re-export
+markdown now" readable-file feature would be lost).
+
+**Cairn disqualified anyway — permissions/data collection.** Its AMO
+listing requires "Access your data for unifybrowse.com" and "Access your
+data for analytics.unifybrowse.com," and declares required data
+collection of "Personally identifying information." That's a real
+architectural difference from this project (fully local, no first-party
+or analytics domain, no PII collection ever) and a dealbreaker regardless
+of how close the feature set is — noting it here so it doesn't get
+re-suggested later as a drop-in replacement or a library to interoperate
+with.
+
+**Runner-up: TabNotes** (`leave-notes-on-any-page`) — the only one with
+real automatic cross-device sync (Firefox's built-in sync, same mechanism
+as this project's `storage.sync`), but no tags/categories and no export
+at all.
+
+**Conclusion:** none of the six covers this project's full feature set,
+and the closest match (Cairn) is ruled out on privacy grounds independent
+of features. No change to the item 1/2 plans above — build, don't adopt.
