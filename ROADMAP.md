@@ -305,3 +305,60 @@ at all.
 **Conclusion:** none of the six covers this project's full feature set,
 and the closest match (Cairn) is ruled out on privacy grounds independent
 of features. No change to the item 1/2 plans above — build, don't adopt.
+
+## Before Release Items
+
+- ~~Write Help pages: one for the mozilla database (what the user sees when
+  they search for add-ons -- a short description of the package, maybe
+  screenshots?)~~ **N/A while unlisted** (2026-08-26) — this assumes a
+  public AMO search-listing page, which doesn't exist for unlisted
+  self-distribution (no one finds this via AMO search; the `.xpi` is
+  handed over directly). README already documents every feature in
+  detail. Revisit if this ever goes listed publicly on AMO.
+- ~~How can users report bugs? Github? Mozilla?~~ **Done** (2026-08-26) —
+  GitHub Issues on this repo (README: "Reporting bugs / feedback";
+  `package.json`'s `bugs` field). Settled easily because release is still
+  unlisted self-distribution (see "Still open" below) — no Mozilla-hosted
+  listing page to route through instead. Revisit if this ever goes listed
+  publicly on AMO, where a Mozilla-side support/abuse-report path also
+  comes into play.
+- ~~Add tests to run before each release~~ **Done** (2026-08-26) — `npm
+  test` runs `node --test test/*.test.js` (Node's built-in test runner,
+  no new dependency). `test/common.test.js` covers `common.js`'s sync
+  storage CRUD, migration-from-legacy-storage, export/import (including
+  dedup and malformed-file rejection), and `renderMarkdown`/`oneLine`
+  (with a direct regression test for the markdown-injection fix above).
+  `common.js` isn't a CommonJS module — `test/support/load-common.js`
+  compiles its source via `vm.compileFunction` with a mock
+  `browser.storage`, run in the same realm as the test file, and exposes
+  its top-level functions directly. Deliberately out of scope:
+  popup.js/list.js/options.js (DOM-rendering glue needing a real DOM to
+  test meaningfully) and writeMarkdownFile/exportEntriesToFile (thin
+  wrappers over browser.downloads/Blob with little logic of their own).
+- ~~Perform a through security risk analysis~~ **Done** (2026-08-26) —
+  full read-through of `manifest.json` and every `.js`/`.html` file, plus a
+  git-history/`.gitignore` check for leaked secrets.
+  - **Confirmed clean:** MV3 with minimal permissions (no `<all_urls>`),
+    all entry data rendered via `.textContent`/`.value` (no DOM XSS), no
+    `eval`/inline scripts/remote code, `data_collection_permissions:
+    required: ["none"]`, no credentials in code or git history (`web-ext
+    sign` reads `$AMO_API_KEY`/`$AMO_API_SECRET` from env), import path
+    uses `JSON.parse` with type-checked filtering.
+  - **One finding, fixed:** `extract-meta.js` pulls `author`/`date` from a
+    page's own `<meta>` tags — fully attacker-controlled content — and
+    `renderMarkdown()` concatenated them unescaped into the `.md` file. A
+    page could embed a newline-containing meta value to inject a fake
+    `## entry` block into the user's real notes file (same injection point
+    for a crafted shared/imported JSON export). Not code execution — a
+    static file — but a real spoofing/integrity issue. Fixed via a
+    `oneLine()` helper in `common.js` that strips `\r`/`\n` from
+    title/url/author/date/category strings at render time; `annotation`
+    is left untouched since it's the user's own free-typed multi-line
+    text, not extracted from an untrusted page.
+  - **Noted, no action needed:** `downloads` permission is broader than
+    what's used (only `.download()`/`.onChanged`) — unavoidable, it's the
+    only permission WebExtensions offers for this; URL scheme isn't
+    validated before "Open," mitigated by Firefox itself rejecting
+    `javascript:`/privileged schemes in `tabs.create()`; `storage.sync`
+    routes entries through Mozilla/Google's sync infra, already disclosed
+    in README's "Cross-machine sync."

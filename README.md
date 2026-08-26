@@ -249,3 +249,10 @@ This only validates against Firefox's manifest/API rules — it doesn't check
 Chrome-specific behavior. There's no equivalent Chrome-side lint step here;
 Chrome/Edge compatibility is verified by loading the unpacked extension and
 testing manually (see **Installing** above).
+
+## Reporting bugs / feedback
+
+[GitHub Issues](https://github.com/haimbar/tab-tack/issues) on this repo —
+same place the install instructions above point to. This is unlisted
+self-distribution, not a public AMO listing, so there's no Mozilla-side
+support channel to route through.

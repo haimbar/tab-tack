@@ -111,15 +111,27 @@ function mergeCategoryList(known, additions) {
   return merged;
 }
 
+// Single-line fields can come from an untrusted source (page meta tags via
+// extract-meta.js, or a shared/imported JSON file) and could contain
+// embedded newlines crafted to inject fake "## entry" blocks into the
+// rendered markdown. Collapse them to one line so they can't break out of
+// their own bullet. Not applied to annotation, which is the user's own
+// free-typed multi-line text, not extracted from a page.
+function oneLine(s) {
+  return String(s).replace(/[\r\n]+/g, " ").trim();
+}
+
 function renderMarkdown(entries) {
   let md = "# Tab Tack\n\n";
   for (const e of entries) {
-    md += `## ${e.title || e.url}\n`;
-    md += `- **URL:** ${e.url}\n`;
-    if (e.author) md += `- **Author:** ${e.author}\n`;
-    if (e.date) md += `- **Date:** ${e.date}\n`;
-    if (e.categories && e.categories.length) md += `- **Category:** ${e.categories.join(", ")}\n`;
-    md += `- **Saved:** ${e.savedDisplay || e.saved}\n`;
+    md += `## ${oneLine(e.title || e.url)}\n`;
+    md += `- **URL:** ${oneLine(e.url)}\n`;
+    if (e.author) md += `- **Author:** ${oneLine(e.author)}\n`;
+    if (e.date) md += `- **Date:** ${oneLine(e.date)}\n`;
+    if (e.categories && e.categories.length) {
+      md += `- **Category:** ${e.categories.map(oneLine).join(", ")}\n`;
+    }
+    md += `- **Saved:** ${oneLine(e.savedDisplay || e.saved)}\n`;
     if (e.annotation) md += `\n${e.annotation}\n`;
     md += "\n---\n\n";
   }

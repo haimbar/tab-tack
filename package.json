@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "description": "Save a tab's title, URL, and your own note to a running markdown file.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/haimbar/tab-tack.git"
+  },
+  "bugs": "https://github.com/haimbar/tab-tack/issues",
   "scripts": {
+    "test": "node --test test/*.test.js",
     "sign": "web-ext sign --channel=unlisted --api-key=\"$AMO_API_KEY\" --api-secret=\"$AMO_API_SECRET\""
   },
   "devDependencies": {
