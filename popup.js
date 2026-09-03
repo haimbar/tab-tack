@@ -1,8 +1,16 @@
 document.addEventListener("DOMContentLoaded", init);
 document.getElementById("save").addEventListener("click", saveEntry);
-document.getElementById("viewSaved").addEventListener("click", (e) => {
+document.getElementById("viewSaved").addEventListener("click", async (e) => {
   e.preventDefault();
-  browser.tabs.create({ url: browser.runtime.getURL("list.html") });
+  const listUrl = browser.runtime.getURL("list.html");
+  const [existing] = await browser.tabs.query({ url: listUrl });
+  if (existing) {
+    await browser.tabs.update(existing.id, { active: true });
+    await browser.windows.update(existing.windowId, { focused: true });
+  } else {
+    await browser.tabs.create({ url: listUrl });
+  }
+  window.close();
 });
 
 async function init() {

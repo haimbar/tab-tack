@@ -19,13 +19,16 @@
   #categoryList .cat-row label { display: inline; font-size: 13px; font-weight: normal; margin: 0 0 0 4px; color: inherit; }
   #categoryList .empty { font-size: 12px; color: #888; }
   #viewSaved {
-    display: block; margin-top: 10px; font-size: 12px; text-align: center;
-    color: #2f4b6e; text-decoration: none;
+    display: block; width: 100%; box-sizing: border-box; margin-bottom: 10px;
+    padding: 8px; font-size: 13px; font-weight: 600; text-align: center;
+    color: #fff; background: #2f4b6e; border-radius: 4px; text-decoration: none;
   }
-  #viewSaved:hover { text-decoration: underline; }
+  #viewSaved:hover { background: #24395a; }
 </style>
 </head>
 <body>
+  <a href="#" id="viewSaved">View saved pages &rarr;</a>
+
   <label for="title">Title</label>
   <input type="text" id="title">
 
@@ -47,7 +50,6 @@
 
   <button id="save">Save to markdown file</button>
   <div id="status"></div>
-  <a href="#" id="viewSaved">View saved pages &rarr;</a>
 
   <script src="vendor/browser-polyfill.min.js"></script>
   <script src="common.js"></script>
