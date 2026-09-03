@@ -80,7 +80,7 @@ list of everything you've saved (newest first). From there you can:
   can belong to more than one category, it appears once per matching group
   (not just once overall). Items with no category land in an "Uncategorized"
   group. Click it again to return to the flat sorted list.
-- **Re-export markdown now** rewrites the `.md` file immediately from
+- **Download markdown file** rewrites the `.md` file immediately from
   what's currently saved — useful if the file was deleted or moved; see
   below.
 
@@ -106,7 +106,7 @@ file; there's no separate "unsaved changes" state to lose track of.
 ## Export / import
 
 Check the boxes on the entries you want (same checkboxes used for "Open
-selected in new tabs"), then **Export selected…** to save them as a JSON
+selected in new tabs"), then **Export selected as JSON…** to save them as a JSON
 file — a native Save dialog lets you pick where, so you can attach it to
 an email or message. **Import…** loads a JSON file back in; entries whose
 URL you already have are skipped automatically, so importing the same

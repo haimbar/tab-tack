@@ -19,6 +19,7 @@
     background: #2f4b6e; color: white; border-radius: 4px;
   }
   .toolbar button:disabled { opacity: 0.5; cursor: default; }
+  .toolbar-divider { width: 1px; align-self: stretch; background: #ccc; margin: 0 2px; }
   .count { font-size: 12px; color: #666; margin-left: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 13px; }
   th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e5e5e5; vertical-align: top; }
@@ -84,10 +85,12 @@
       <option value="">All categories</option>
     </select>
     <button id="openSelected" disabled>Open selected in new tabs</button>
-    <button id="exportSelected" disabled title="Save the checked entries as a JSON file you can send to someone">Export selected&hellip;</button>
-    <button id="importBtn" title="Load entries from a Tab Tack export file; duplicates (by URL) are skipped">Import&hellip;</button>
+    <span class="toolbar-divider"></span>
+    <button id="exportSelected" disabled title="Save the checked entries as a JSON file you can send to someone">Export selected as JSON&hellip;</button>
+    <button id="importBtn" title="Load entries from a Tab Tack JSON export file; duplicates (by URL) are skipped">Import&hellip;</button>
     <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
-    <button id="reexport" title="Re-write the markdown file in Downloads from what's currently saved">Re-export markdown now</button>
+    <span class="toolbar-divider"></span>
+    <button id="reexport" title="Re-write the markdown file in Downloads from what's currently saved">Download markdown file</button>
     <span id="importStatus" style="font-size:12px;color:#2f4b6e;"></span>
     <span class="count" id="count"></span>
   </div>
