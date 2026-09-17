@@ -24,6 +24,12 @@ hasn't been individually verified on each, but there's no Chrome-specific
 code here that would behave differently on one Chromium browser vs.
 another.
 
+Firefox installs require Firefox 140 or later (`strict_min_version` in
+`manifest.json`) — that's the version that added the
+`data_collection_permissions` manifest field this extension declares.
+Chrome/Edge have no equivalent version pin; any browser current enough to
+support Manifest V3 extensions works.
+
 ## How it works
 
 - Click the toolbar icon → a popup shows the page's title and URL (pre-filled),
@@ -123,6 +129,13 @@ Matching is by normalized URL (ignoring the `#fragment` and a trailing
 slash), not by any internal id — two installs never share an entry's id,
 so id-based matching would import duplicates every time.
 
+Importing a file means trusting whoever made it somewhat less than you
+trust your own typing — see **Security** below for what's actually
+validated. One current rough edge: an entry dropped for having no URL, or
+one dropped for an unsupported URL scheme, both vanish silently — neither
+shows up in the "Imported X, skipped Y" count, so an import that's missing
+entries you expected won't tell you why.
+
 ## Cross-machine sync
 
 Saved entries and categories live in `browser.storage.sync` instead of
@@ -190,14 +203,21 @@ regenerate the file.
 
 ## Why it re-writes the whole file instead of appending
 
-Firefox extensions can't read/write arbitrary files on disk for security
-reasons. The extension keeps the true list of entries in its own storage and
-uses the `downloads` API (with `conflictAction: "overwrite"`) to save a fresh
-copy of the complete markdown file each time — same visible effect as
-appending, without needing extra software installed. If you ever want a
-*true* append to an arbitrary file path (e.g. an Obsidian vault file outside
-Downloads), that requires a native messaging host (a companion script) —
-happy to build that instead if this turns out to be limiting.
+Browser extensions can't read/write arbitrary files on disk for security
+reasons (this isn't Firefox-specific — the same sandboxing applies on
+Chrome/Edge). The extension keeps the true list of entries in its own
+storage and uses the `downloads` API (with `conflictAction: "overwrite"`)
+to save a fresh copy of the complete markdown file each time — same visible
+effect as appending, without needing extra software installed. If you ever
+want a *true* append to an arbitrary file path (e.g. an Obsidian vault file
+outside Downloads), that requires a native messaging host (a companion
+script) — happy to build that instead if this turns out to be limiting.
+
+One implication worth being explicit about: once written, the `.md` file
+is plain text the extension has no further control over. See **Security**
+below for what happens if you point a tool that can *execute* content it
+finds inside a note (Obsidian's Templater/Dataview plugins, for example) at
+it.
 
 ## Installing
 
@@ -259,6 +279,21 @@ Chrome-specific behavior. There's no equivalent Chrome-side lint step here;
 Chrome/Edge compatibility is verified by loading the unpacked extension and
 testing manually (see **Installing** above).
 
+## Testing
+
+```bash
+npm test
+```
+
+Runs `common.js`'s test suite on Node's built-in test runner (`node --test`,
+no extra dependency) — sync storage CRUD, migration from the legacy
+storage format, export/import (URL-scheme filtering, duplicate handling,
+malformed-file rejection), `renderMarkdown`, and every sanitization
+function under **Security** below. `popup.js`/`list.js`/`options.js` are
+DOM-rendering glue that would need a real DOM environment to test
+meaningfully, so they're exercised manually instead (see **Installing**
+above) rather than mocked just to exercise the mock.
+
 ## Privacy
 
 Tab Tack collects nothing and phones home to no one — there's no network
@@ -268,6 +303,71 @@ sync** above), not a server this extension controls. The `downloads`
 permission is used only to write the markdown file to your own Downloads
 folder.
 
+## Security
+
+Tab Tack's threat model is narrow — a local tool, no server, no accounts —
+but two features cross a real trust boundary: importing a JSON file
+someone else made, and auto-filling author/date from a page's own
+`<meta>` tags, which any website fully controls. Both are treated as
+untrusted input, not just as "someone else's typing":
+
+- **URL scheme is restricted to `http`/`https`.** Enforced on manual save,
+  edit, and import (`isSafeUrl()` in `common.js`). Without this, a crafted
+  entry could point `tabs.create()` at a `data:`/`javascript:` URL and show
+  a convincing fake page under a disguised title, or at a `file://` path
+  into your own filesystem.
+- **Markdown-structure injection is neutralized.** `oneLine()` strips
+  embedded newlines from title/url/author/date/category before they're
+  written into the markdown file; `escapeMarkdownStructure()` does the
+  equivalent for the multi-line annotation field. Together they stop a
+  crafted value from forging a fake `## heading` entry, a fake `---`
+  entry divider, or an unterminated code fence that would swallow every
+  entry after it into one code block.
+- **Bidi-override link spoofing is stripped.** `stripBidiControls()` /
+  `sanitizeEntryFields()` remove Unicode right-to-left-override/isolate
+  characters from title/author/date/annotation/category text when an
+  entry is saved, edited, or imported — the technique behind "Trojan
+  Source" source-code attacks, here usable to make a saved title's link
+  text visually lie about what it says. This runs before storage, not
+  just when rendering markdown, because the list view renders title as
+  plain, unescaped link text with no escaping of its own.
+- **No code-execution path exists in the extension.** No `eval`, no
+  `new Function`, no `innerHTML`/`outerHTML` assignment of any user- or
+  page-derived value anywhere in the code (the only `innerHTML` uses are
+  `= ""` clears). `browser.scripting.executeScript` is called exactly
+  once, always loading the extension's own static `extract-meta.js` file
+  — never a string built from page or imported content. The default
+  Manifest V3 content-security-policy applies (no override in
+  `manifest.json`), blocking inline scripts and remote script loading
+  regardless. The extension also never calls `downloads.open()` — it
+  writes files, never opens or launches what it writes, which is the
+  actual mechanism that would let a downloaded file execute.
+- **Import parsing never executes anything.** `parseImportPayload()` uses
+  `JSON.parse` (never `eval`), keeps only entries with a string `url`
+  passing the scheme check above, and defaults/type-checks every other
+  field before use.
+- **The exported `.md`/`.json` files are plain text once they leave the
+  extension.** If you feed `tab-tack.md` into a tool that can execute
+  content it finds inside a note — e.g. Obsidian with the Templater or
+  Dataview community plugins configured to run code from note content —
+  treat it like any file from an outside source: data to read, not
+  trusted input to execute. Tab Tack's own guarantees stop at the file it
+  writes; they don't extend to what another program chooses to do with it.
+- **Permissions are minimal and each is used exactly where declared:**
+  `activeTab` (read the current tab's title/URL; scopes `scripting` to
+  it — no `<all_urls>` or other broad host permission is requested),
+  `scripting` (inject the bundled `extract-meta.js` to read a page's own
+  meta tags), `downloads` (write the markdown/JSON export files),
+  `storage` (the synced entries/categories and the local filename
+  setting).
+
+See `common.js` for the implementation of every function named above, and
+**Testing** above for the tests that pin this behavior down.
+
 ## Reporting bugs / feedback
 
 [GitHub Issues](https://github.com/haimbar/tab-tack/issues) on this repo.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

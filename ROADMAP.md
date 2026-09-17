@@ -362,3 +362,28 @@ of features. No change to the item 1/2 plans above — build, don't adopt.
     `javascript:`/privileged schemes in `tabs.create()`; `storage.sync`
     routes entries through Mozilla/Google's sync infra, already disclosed
     in README's "Cross-machine sync."
+  - **Superseded** (2026-09-17) — a second pass prompted by actually
+    preparing to submit the public AMO listing found the two "no action
+    needed" calls above too optimistic, plus two more gaps, all now fixed
+    (README: "Security" has the user-facing version; `common.js` has the
+    code):
+    - `annotation` turned out not to be safe to leave untouched — it can
+      arrive from an *imported* JSON file someone else authored, not just
+      from the user's own typing. `escapeMarkdownStructure()` now
+      neutralizes heading/`---`-divider/code-fence lines in it the same
+      way `oneLine()` already did for the single-line fields, without
+      collapsing its legitimate multi-line structure.
+    - URL scheme is now actually validated (`isSafeUrl()`, http/https
+      only) on save/edit/import, rather than relying on `tabs.create()`
+      to reject something on its own — `data:`/`javascript:`/`file://`
+      entries are rejected before they're ever stored.
+    - Unicode bidi-override characters (RTL-override spoofing, "Trojan
+      Source"-style) weren't considered in the original pass at all —
+      `stripBidiControls()` now strips them from title/author/date/
+      annotation/category at every write path, since the list view
+      renders title as unescaped link text with no markdown-layer
+      protection to fall back on.
+    - Confirmed (not just assumed) there's no `downloads.open()` call
+      anywhere, i.e. no path where the extension itself launches a
+      downloaded file with the OS's default handler — the mechanism that
+      would actually let a "self-extracting" file execute.
