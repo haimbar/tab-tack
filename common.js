@@ -260,18 +260,27 @@ function parseImportPayload(jsonText) {
   const data = JSON.parse(jsonText);
   const entries = Array.isArray(data) ? data : data.entries;
   if (!Array.isArray(entries)) throw new Error("Not a recognized Tab Tack export file.");
-  return entries.filter((e) => e && typeof e.url === "string" && isSafeUrl(e.url.trim()));
+  return entries;
 }
 
+// Per-entry validation (as opposed to parseImportPayload's structural
+// checks) lives here rather than in parseImportPayload so rejections can be
+// counted and reported back to the user, instead of silently vanishing.
 async function importEntries(parsedEntries) {
   const existing = await getAllEntries();
   const existingUrls = new Set(existing.map((e) => normalizeUrl(e.url)));
 
   let added = 0;
   let skipped = 0;
+  let rejected = 0;
   const importedCategories = [];
 
   for (const e of parsedEntries) {
+    if (!e || typeof e.url !== "string" || !isSafeUrl(e.url.trim())) {
+      rejected++;
+      continue;
+    }
+
     const key = normalizeUrl(e.url);
     if (existingUrls.has(key)) {
       skipped++;
@@ -299,7 +308,7 @@ async function importEntries(parsedEntries) {
     await setCategories(mergeCategoryList(known, importedCategories));
   }
 
-  return { added, skipped };
+  return { added, skipped, rejected };
 }
 
 function waitForDownloadComplete(downloadId) {

@@ -131,10 +131,10 @@ so id-based matching would import duplicates every time.
 
 Importing a file means trusting whoever made it somewhat less than you
 trust your own typing — see **Security** below for what's actually
-validated. One current rough edge: an entry dropped for having no URL, or
-one dropped for an unsupported URL scheme, both vanish silently — neither
-shows up in the "Imported X, skipped Y" count, so an import that's missing
-entries you expected won't tell you why.
+validated. An entry with no URL, or one with an unsupported URL scheme, is
+rejected rather than imported; the status message reports it separately
+("Imported X, skipped Y already saved, rejected Z (missing or unsafe
+URL)") so a smaller-than-expected import tells you why.
 
 ## Cross-machine sync
 

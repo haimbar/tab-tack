@@ -209,24 +209,12 @@ test("buildExportPayload / parseImportPayload", async (t) => {
     assert.throws(() => ctx.parseImportPayload(JSON.stringify({ foo: "bar" })));
   });
 
-  await t.test("drops entries without a usable url", () => {
+  await t.test("does not filter entries by url validity - that's importEntries' job", () => {
     const { ctx } = loadCommon();
     const entries = ctx.parseImportPayload(
       JSON.stringify([{ url: "https://a.com" }, { url: "" }, { title: "no url" }])
     );
-    assert.deepEqual(entries, [{ url: "https://a.com" }]);
-  });
-
-  await t.test("drops entries with a non-http(s) url", () => {
-    const { ctx } = loadCommon();
-    const entries = ctx.parseImportPayload(
-      JSON.stringify([
-        { url: "https://a.com" },
-        { url: "data:text/html,<script>alert(1)</script>" },
-        { url: "javascript:alert(1)" }
-      ])
-    );
-    assert.deepEqual(entries, [{ url: "https://a.com" }]);
+    assert.deepEqual(entries, [{ url: "https://a.com" }, { url: "" }, { title: "no url" }]);
   });
 });
 
@@ -314,6 +302,24 @@ test("importEntries skips an already-saved URL, adds a new one, merges categorie
   const all = await ctx.getAllEntries();
   assert.deepEqual(all.map((e) => e.url).sort(), ["https://a.com", "https://c.com"]);
   assert.deepEqual(await ctx.getCategories(), ["fresh"]);
+});
+
+test("importEntries counts entries rejected for a missing or unsafe URL", async () => {
+  const { ctx } = loadCommon();
+
+  const { added, skipped, rejected } = await ctx.importEntries([
+    { url: "https://a.com", title: "Kept" },
+    { url: "" },
+    { title: "no url at all" },
+    { url: "data:text/html,<script>alert(1)</script>" },
+    { url: "javascript:alert(1)" }
+  ]);
+
+  assert.equal(added, 1);
+  assert.equal(skipped, 0);
+  assert.equal(rejected, 4);
+  const all = await ctx.getAllEntries();
+  assert.deepEqual(all.map((e) => e.url), ["https://a.com"]);
 });
 
 test("importEntries strips bidi-override characters from the entry and from the category list", async () => {

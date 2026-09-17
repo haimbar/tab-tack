@@ -513,13 +513,15 @@ async function importFromFile(evt) {
   try {
     const text = await file.text();
     const parsed = parseImportPayload(text);
-    const { added, skipped } = await importEntries(parsed);
+    const { added, skipped, rejected } = await importEntries(parsed);
 
     await reload();
     render();
     await writeMarkdownFile(allEntries);
 
-    status.textContent = `Imported ${added}, skipped ${skipped} already saved.`;
+    let message = `Imported ${added}, skipped ${skipped} already saved`;
+    if (rejected > 0) message += `, rejected ${rejected} (missing or unsafe URL)`;
+    status.textContent = `${message}.`;
   } catch (err) {
     console.error(err);
     status.style.color = "#b3261e";
