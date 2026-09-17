@@ -42,7 +42,8 @@ const EXPORTS = [
   "removeEntryRecord", "migrateLegacyStorage", "mergeCategoryList",
   "renderMarkdown", "writeMarkdownFile", "buildExportPayload",
   "exportEntriesToFile", "parseImportPayload", "importEntries",
-  "waitForDownloadComplete", "oneLine", "escapeMarkdownStructure"
+  "waitForDownloadComplete", "oneLine", "escapeMarkdownStructure",
+  "stripBidiControls", "sanitizeEntryFields"
 ];
 
 const SOURCE = fs.readFileSync(path.join(__dirname, "..", "..", "common.js"), "utf8");

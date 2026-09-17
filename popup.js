@@ -94,7 +94,7 @@ function collectSelectedCategories() {
 async function saveEntry() {
   const now = new Date();
   const categories = collectSelectedCategories();
-  const entry = {
+  const entry = sanitizeEntryFields({
     title: document.getElementById("title").value.trim(),
     url: document.getElementById("url").value.trim(),
     author: document.getElementById("author").value.trim(),
@@ -103,7 +103,7 @@ async function saveEntry() {
     annotation: document.getElementById("annotation").value.trim(),
     saved: now.toISOString(),
     savedDisplay: now.toLocaleString()
-  };
+  });
 
   if (!entry.url) return;
 
@@ -133,7 +133,7 @@ async function saveEntry() {
     entries.push(record);
 
     const knownCategories = await getCategories();
-    await setCategories(mergeCategoryList(knownCategories, categories));
+    await setCategories(mergeCategoryList(knownCategories, entry.categories));
 
     await writeMarkdownFile(entries);
 

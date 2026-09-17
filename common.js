@@ -138,9 +138,11 @@ function oneLine(s) {
 // multi-line note), but it can also arrive from an imported JSON file
 // someone else authored (see importEntries below) - untrusted the same way
 // a page's meta tags are. Rather than collapsing it like oneLine, neutralize
-// just the two constructs that could forge a fake entry: a line that reads
-// as a heading ("## Fake Entry") or as the "---" divider renderMarkdown puts
-// between real entries. A leading backslash escapes both in CommonMark
+// just the constructs that could forge a fake entry or corrupt the file's
+// structure: a line that reads as a heading ("## Fake Entry"), as the "---"
+// divider renderMarkdown puts between real entries, or as a code-fence
+// delimiter (an unterminated ``` would swallow every entry after it into
+// one code block). A leading backslash escapes all three in CommonMark
 // without visibly changing ordinary text.
 function escapeMarkdownStructure(s) {
   return String(s)
@@ -148,9 +150,34 @@ function escapeMarkdownStructure(s) {
     .map((line) => {
       if (/^\s*#{1,6}(\s|$)/.test(line)) return line.replace(/^(\s*)(#+)/, "$1\\$2");
       if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) return line.replace(/^(\s*)/, "$1\\");
+      if (/^\s*(`{3,}|~{3,})/.test(line)) return line.replace(/^(\s*)([`~]{3,})/, "$1\\$2");
       return line;
     })
     .join("\n");
+}
+
+// Explicit Unicode bidi-override/isolate characters (RLO/LRO/RLE/LRE/PDF and
+// the isolate variants) can make displayed text - e.g. a saved title shown
+// as clickable link text - visually lie about what it says, the same trick
+// behind "Trojan Source" source-code attacks. Ordinary right-to-left text
+// (Arabic, Hebrew, ...) relies on the implicit bidi algorithm rather than
+// these override codepoints, so legitimate text is unaffected by removing
+// them. Applied at the point an entry is saved/edited/imported (not just
+// when rendering markdown) so it also protects the extension's own list
+// view, which renders title as raw link text with no escaping of its own.
+function stripBidiControls(s) {
+  return String(s).replace(/[\u202A-\u202E\u2066-\u2069]/g, "");
+}
+
+function sanitizeEntryFields(fields) {
+  return {
+    ...fields,
+    title: fields.title !== undefined ? stripBidiControls(fields.title) : fields.title,
+    author: fields.author !== undefined ? stripBidiControls(fields.author) : fields.author,
+    date: fields.date !== undefined ? stripBidiControls(fields.date) : fields.date,
+    annotation: fields.annotation !== undefined ? stripBidiControls(fields.annotation) : fields.annotation,
+    categories: Array.isArray(fields.categories) ? fields.categories.map(stripBidiControls) : fields.categories
+  };
 }
 
 function renderMarkdown(entries) {
@@ -252,7 +279,7 @@ async function importEntries(parsedEntries) {
     }
     existingUrls.add(key);
 
-    await addEntryRecord({
+    const record = sanitizeEntryFields({
       title: e.title || "",
       url: e.url,
       author: e.author || "",
@@ -262,8 +289,9 @@ async function importEntries(parsedEntries) {
       saved: e.saved || new Date().toISOString(),
       savedDisplay: e.savedDisplay || new Date().toLocaleString()
     });
+    await addEntryRecord(record);
     added++;
-    if (Array.isArray(e.categories)) importedCategories.push(...e.categories);
+    importedCategories.push(...record.categories);
   }
 
   if (importedCategories.length > 0) {
