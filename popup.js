@@ -14,6 +14,8 @@ document.getElementById("viewSaved").addEventListener("click", async (e) => {
 });
 
 async function init() {
+  document.getElementById("version").textContent = `v${browser.runtime.getManifest().version}`;
+
   await migrateLegacyStorage();
 
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });

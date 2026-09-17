@@ -33,6 +33,8 @@ browser.storage.onChanged.addListener((_changes, areaName) => {
 });
 
 async function init() {
+  document.getElementById("version").textContent = `v${browser.runtime.getManifest().version}`;
+
   await migrateLegacyStorage();
 
   allEntries = await getAllEntries();

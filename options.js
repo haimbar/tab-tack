@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  document.getElementById("version").textContent = `v${browser.runtime.getManifest().version}`;
+
   const { filename = "tab-tack.md" } = await browser.storage.local.get("filename");
   document.getElementById("filename").value = filename;
 });
