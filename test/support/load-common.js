@@ -37,12 +37,12 @@ function createMockStorageArea() {
 // Every top-level function declaration in common.js, so a fresh call to it
 // (below) can hand them all back as one object.
 const EXPORTS = [
-  "normalizeUrl", "generateId", "getAllEntries", "sortCategories",
+  "normalizeUrl", "isSafeUrl", "generateId", "getAllEntries", "sortCategories",
   "getCategories", "setCategories", "addEntryRecord", "updateEntryRecord",
   "removeEntryRecord", "migrateLegacyStorage", "mergeCategoryList",
   "renderMarkdown", "writeMarkdownFile", "buildExportPayload",
   "exportEntriesToFile", "parseImportPayload", "importEntries",
-  "waitForDownloadComplete", "oneLine"
+  "waitForDownloadComplete", "oneLine", "escapeMarkdownStructure"
 ];
 
 const SOURCE = fs.readFileSync(path.join(__dirname, "..", "..", "common.js"), "utf8");

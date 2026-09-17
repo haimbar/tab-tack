@@ -10,6 +10,19 @@ function normalizeUrl(url) {
   }
 }
 
+// Entries get opened with tabs.create() and rendered as links; restricting
+// to http(s) keeps a malicious import (or a hand-edited entry) from storing
+// a data:/javascript: URL that opens as a convincing fake page under a
+// friendly, attacker-chosen title.
+function isSafeUrl(url) {
+  try {
+    const scheme = new URL(url).protocol;
+    return scheme === "http:" || scheme === "https:";
+  } catch {
+    return false;
+  }
+}
+
 // --- Sync storage layer -----------------------------------------------
 //
 // Entries live in browser.storage.sync so they follow the user's browser
@@ -115,10 +128,29 @@ function mergeCategoryList(known, additions) {
 // extract-meta.js, or a shared/imported JSON file) and could contain
 // embedded newlines crafted to inject fake "## entry" blocks into the
 // rendered markdown. Collapse them to one line so they can't break out of
-// their own bullet. Not applied to annotation, which is the user's own
-// free-typed multi-line text, not extracted from a page.
+// their own bullet. Not applied to annotation, which keeps its own
+// multi-line structure - see escapeMarkdownStructure below.
 function oneLine(s) {
   return String(s).replace(/[\r\n]+/g, " ").trim();
+}
+
+// annotation is the one field that keeps real newlines (a user's own
+// multi-line note), but it can also arrive from an imported JSON file
+// someone else authored (see importEntries below) - untrusted the same way
+// a page's meta tags are. Rather than collapsing it like oneLine, neutralize
+// just the two constructs that could forge a fake entry: a line that reads
+// as a heading ("## Fake Entry") or as the "---" divider renderMarkdown puts
+// between real entries. A leading backslash escapes both in CommonMark
+// without visibly changing ordinary text.
+function escapeMarkdownStructure(s) {
+  return String(s)
+    .split(/\r\n|\r|\n/)
+    .map((line) => {
+      if (/^\s*#{1,6}(\s|$)/.test(line)) return line.replace(/^(\s*)(#+)/, "$1\\$2");
+      if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) return line.replace(/^(\s*)/, "$1\\");
+      return line;
+    })
+    .join("\n");
 }
 
 function renderMarkdown(entries) {
@@ -132,7 +164,7 @@ function renderMarkdown(entries) {
       md += `- **Category:** ${e.categories.map(oneLine).join(", ")}\n`;
     }
     md += `- **Saved:** ${oneLine(e.savedDisplay || e.saved)}\n`;
-    if (e.annotation) md += `\n${e.annotation}\n`;
+    if (e.annotation) md += `\n${escapeMarkdownStructure(e.annotation)}\n`;
     md += "\n---\n\n";
   }
   return md;
@@ -201,7 +233,7 @@ function parseImportPayload(jsonText) {
   const data = JSON.parse(jsonText);
   const entries = Array.isArray(data) ? data : data.entries;
   if (!Array.isArray(entries)) throw new Error("Not a recognized Tab Tack export file.");
-  return entries.filter((e) => e && typeof e.url === "string" && e.url.trim());
+  return entries.filter((e) => e && typeof e.url === "string" && isSafeUrl(e.url.trim()));
 }
 
 async function importEntries(parsedEntries) {

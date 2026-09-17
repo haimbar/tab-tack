@@ -108,6 +108,13 @@ async function saveEntry() {
   if (!entry.url) return;
 
   const status = document.getElementById("status");
+
+  if (!isSafeUrl(entry.url)) {
+    status.style.color = "#b3261e";
+    status.textContent = "Only http/https links can be saved.";
+    return;
+  }
+
   const entries = await getAllEntries();
 
   const duplicate = entries.some((e) => normalizeUrl(e.url) === normalizeUrl(entry.url));

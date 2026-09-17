@@ -201,6 +201,13 @@ happy to build that instead if this turns out to be limiting.
 
 ## Installing
 
+### Firefox (from addons.mozilla.org, once the public listing is live)
+
+Search Firefox Add-ons for "Tab Tack" and click **Add to Firefox** — no
+manual signing or `.xpi` handling needed; Firefox installs and updates it
+like any other add-on. Until the listing is approved, use one of the manual
+options below.
+
 ### Firefox (temporary, for trying it out)
 
 1. Open `about:debugging#/runtime/this-firefox` in Firefox.
@@ -221,19 +228,21 @@ permanently-installed extension with no signing step — it just stays under
    restarts — no re-loading needed each session, unlike Firefox's
    temporary add-ons.
 
-## Installing permanently on Firefox
+## Installing permanently on Firefox without the public listing
 
-Firefox requires extensions to be signed to install permanently (even for
-personal, unlisted use). Easiest path:
+Firefox requires extensions to be signed to install permanently, even for
+personal, unlisted use. Get free API credentials at
+https://addons.mozilla.org/developers/addon/api/key/, then:
 
 ```bash
-npx web-ext sign --api-key=<AMO_JWT_ISSUER> --api-secret=<AMO_JWT_SECRET> --channel=unlisted
+AMO_API_KEY=<your key> AMO_API_SECRET=<your secret> npm run sign
 ```
 
-Get free API credentials at https://addons.mozilla.org/developers/addon/api/key/,
-then install the resulting signed `.xpi` from the `web-ext-artifacts/` folder
-by dragging it into Firefox. It stays private (unlisted) — nobody but you can
-find or install it.
+This runs `web-ext sign --channel=unlisted`. Install the resulting signed
+`.xpi` from the `web-ext-artifacts/` folder by dragging it into Firefox. It
+stays private (unlisted) — nobody but you can find or install it. (For
+submitting the public listing itself, `npm run sign:listed` runs the same
+signing step against the `listed` channel instead.)
 
 Alternative: on Firefox Developer Edition or Nightly, set
 `xpinstall.signatures.required` to `false` in `about:config` and load the
@@ -250,9 +259,15 @@ Chrome-specific behavior. There's no equivalent Chrome-side lint step here;
 Chrome/Edge compatibility is verified by loading the unpacked extension and
 testing manually (see **Installing** above).
 
+## Privacy
+
+Tab Tack collects nothing and phones home to no one — there's no network
+request anywhere in the code. Saved entries live in `browser.storage.sync`,
+which is your browser vendor's own sync infrastructure (see **Cross-machine
+sync** above), not a server this extension controls. The `downloads`
+permission is used only to write the markdown file to your own Downloads
+folder.
+
 ## Reporting bugs / feedback
 
-[GitHub Issues](https://github.com/haimbar/tab-tack/issues) on this repo —
-same place the install instructions above point to. This is unlisted
-self-distribution, not a public AMO listing, so there's no Mozilla-side
-support channel to route through.
+[GitHub Issues](https://github.com/haimbar/tab-tack/issues) on this repo.

@@ -424,6 +424,11 @@ async function saveEdit(id) {
     return;
   }
 
+  if (!isSafeUrl(url)) {
+    status.textContent = "Only http/https links are allowed.";
+    return;
+  }
+
   const duplicate = allEntries.some(
     (e) => e.id !== id && normalizeUrl(e.url) === normalizeUrl(url)
   );

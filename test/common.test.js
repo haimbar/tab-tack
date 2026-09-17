@@ -20,6 +20,43 @@ test("normalizeUrl", async (t) => {
   });
 });
 
+test("isSafeUrl", async (t) => {
+  await t.test("accepts http and https", () => {
+    const { ctx } = loadCommon();
+    assert.equal(ctx.isSafeUrl("http://example.com"), true);
+    assert.equal(ctx.isSafeUrl("https://example.com/page"), true);
+  });
+
+  await t.test("rejects data:, javascript:, and unparsable URLs", () => {
+    const { ctx } = loadCommon();
+    assert.equal(ctx.isSafeUrl("data:text/html,<script>alert(1)</script>"), false);
+    assert.equal(ctx.isSafeUrl("javascript:alert(1)"), false);
+    assert.equal(ctx.isSafeUrl("not a url"), false);
+  });
+});
+
+test("escapeMarkdownStructure", async (t) => {
+  await t.test("leaves ordinary multi-line text untouched", () => {
+    const { ctx } = loadCommon();
+    const note = "First line.\n\nSecond paragraph with more detail.";
+    assert.equal(ctx.escapeMarkdownStructure(note), note);
+  });
+
+  await t.test("escapes a heading line so it can't forge a fake entry", () => {
+    const { ctx } = loadCommon();
+    const out = ctx.escapeMarkdownStructure("Nice note\n\n## Fake Entry\nmore text");
+    assert.ok(!/^## Fake Entry$/m.test(out));
+    assert.match(out, /\\## Fake Entry/);
+  });
+
+  await t.test("escapes a bare --- line so it can't fake the entry divider", () => {
+    const { ctx } = loadCommon();
+    const out = ctx.escapeMarkdownStructure("Nice note\n\n---\n\nmore text");
+    assert.ok(!/^---$/m.test(out));
+    assert.match(out, /\\---/);
+  });
+});
+
 test("sortCategories is a case-insensitive locale sort", () => {
   const { ctx } = loadCommon();
   assert.deepEqual(ctx.sortCategories(["banana", "Apple", "cherry"]), ["Apple", "banana", "cherry"]);
@@ -72,6 +109,18 @@ test("renderMarkdown", async (t) => {
       /- \*\*Author:\*\* Evil --- ## Fake Entry - \*\*URL:\*\* https:\/\/evil\.example\/phish/
     );
   });
+
+  await t.test("neutralizes a fake entry forged through an imported annotation", () => {
+    const { ctx } = loadCommon();
+    const md = ctx.renderMarkdown([{
+      title: "Real Page",
+      url: "https://example.com/real",
+      annotation: "Nice note\n\n---\n\n## Fake Entry\n- **URL:** https://evil.example/phish",
+      saved: "2026-08-25T00:00:00.000Z"
+    }]);
+    assert.ok(!/^## Fake Entry$/m.test(md));
+    assert.match(md, /Nice note\n\n\\---\n\n\\## Fake Entry/);
+  });
 });
 
 test("buildExportPayload / parseImportPayload", async (t) => {
@@ -107,6 +156,18 @@ test("buildExportPayload / parseImportPayload", async (t) => {
     const { ctx } = loadCommon();
     const entries = ctx.parseImportPayload(
       JSON.stringify([{ url: "https://a.com" }, { url: "" }, { title: "no url" }])
+    );
+    assert.deepEqual(entries, [{ url: "https://a.com" }]);
+  });
+
+  await t.test("drops entries with a non-http(s) url", () => {
+    const { ctx } = loadCommon();
+    const entries = ctx.parseImportPayload(
+      JSON.stringify([
+        { url: "https://a.com" },
+        { url: "data:text/html,<script>alert(1)</script>" },
+        { url: "javascript:alert(1)" }
+      ])
     );
     assert.deepEqual(entries, [{ url: "https://a.com" }]);
   });

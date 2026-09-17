@@ -2,6 +2,7 @@
   "name": "tab-tack",
   "version": "1.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Save a tab's title, URL, and your own note to a running markdown file.",
   "repository": {
     "type": "git",
@@ -10,9 +11,20 @@
   "bugs": "https://github.com/haimbar/tab-tack/issues",
   "scripts": {
     "test": "node --test test/*.test.js",
-    "sign": "web-ext sign --channel=unlisted --api-key=\"$AMO_API_KEY\" --api-secret=\"$AMO_API_SECRET\""
+    "sign": "web-ext sign --channel=unlisted --api-key=\"$AMO_API_KEY\" --api-secret=\"$AMO_API_SECRET\"",
+    "sign:listed": "web-ext sign --channel=listed --api-key=\"$AMO_API_KEY\" --api-secret=\"$AMO_API_SECRET\""
   },
   "devDependencies": {
     "web-ext": "^8.10.0"
+  },
+  "webExt": {
+    "ignoreFiles": [
+      "test/**",
+      "package-lock.json",
+      "ROADMAP.md",
+      "TabTack.png",
+      "tab-tack.tar.gz",
+      "*.tar.gz"
+    ]
   }
 }
