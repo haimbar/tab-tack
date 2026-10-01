@@ -20,6 +20,7 @@
   "webExt": {
     "ignoreFiles": [
       "test/**",
+      "scripts/**",
       "package-lock.json",
       "ROADMAP.md",
       "TabTack.png",

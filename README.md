@@ -196,10 +196,27 @@ sync option would look like if this ever becomes limiting.
 
 The `.md` file is a disposable, regenerable *export* — the real data is
 `storage.sync` (see above), which already survives a Downloads-folder
-wipe untouched. If the file itself goes missing, click **Re-export
-markdown now** at the top of **View saved pages** to rewrite it from
+wipe untouched. If the file itself goes missing, click **Download
+markdown file** at the top of **View saved pages** to rewrite it from
 what's currently saved — no data is actually lost, you just need to
 regenerate the file.
+
+## If it's the other way around — `storage.sync` is empty but the `.md` file survived
+
+This can happen if the extension gets removed and reinstalled (see
+**Cross-machine sync**'s temporary-add-on caveat above) and sync doesn't
+carry over. If you still have a `tab-tack.md` from before, run:
+
+```bash
+node scripts/md-to-import.js path/to/tab-tack.md
+```
+
+from this repo to parse it back into a Tab Tack JSON file, then **Import…**
+that file from **View saved pages** to restore every entry. This is a
+maintained recovery utility (tracked in `scripts/`, run with Node, not
+loaded by the extension itself) kept around because this is a real
+recurring risk, not a one-time fix — the `.md` file is normally
+write-only from the extension's side otherwise.
 
 ## Why it re-writes the whole file instead of appending
 

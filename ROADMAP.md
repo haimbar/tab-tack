@@ -256,6 +256,40 @@ annoying; not worth the $5 + review-queue wait otherwise.
   primary user of this extension, don't switch browsers often enough for
   this to matter in practice. Revisit if that changes.
 
+- **The `.md` file is a "download" by classification, not just by
+  location — changing where it lands doesn't change that.** Raised
+  (2026-10-01) after a real incident: removing/reinstalling the
+  extension lost `storage.sync` (the documented temporary-add-on risk
+  under "Cross-machine sync"), and the only remaining record was the
+  `.md` file — recovered via `scripts/md-to-import.js`, which parses it
+  back into a Tab Tack JSON import. Kept and tracked as a maintained
+  recovery tool rather than thrown away after use, since
+  removal/reinstall losing sync is a real recurring risk this project
+  explicitly documents, not a one-time fluke. That incident also
+  prompted the question of making the `.md` file itself safe
+  from Downloads-folder cleanup (manual, browser "Clear Recent
+  History," CCleaner, etc.) by defaulting its location to the home
+  directory instead. Rejected: `browser.downloads.download()` can't
+  target an absolute path outside the browser's configured Downloads
+  folder at all (relative-path-only, no `..`), and even redirecting
+  Firefox's own Downloads location wouldn't actually fix the underlying
+  concern — cleanup tools generally key off the browser's download
+  history/"this was a download" classification, not a specific folder,
+  so the file stays a cleanup target wherever it physically lands. The
+  only way to write a file that's genuinely indistinguishable from one
+  the user created directly (never entering download history at all) is
+  a native messaging host — the same companion-program requirement
+  already noted under "Why it re-writes the whole file instead of
+  appending" in the README for true arbitrary-path writes.
+  **Decision: not now.** Data safety doesn't actually depend on the
+  `.md` file surviving — `storage.sync` plus JSON Export/Import already
+  cover that independently of any file on disk (as the recovery above
+  demonstrated). The `.md` file keeps its existing disposable/
+  regenerable design; building a native messaging host just to make the
+  readable export file itself cleanup-proof isn't worth a second
+  installable component unless that file's survival starts mattering
+  for its own sake, not as a backup mechanism.
+
 ## Still open
 
 - For sync: is "two of my own machines, same browser" the actual real
