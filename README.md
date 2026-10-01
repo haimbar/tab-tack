@@ -73,7 +73,7 @@ URL (ignoring the `#fragment` and a trailing slash), not by title.
 Click **View saved pages →** at the bottom of the popup to open a full-page
 list of everything you've saved (newest first). From there you can:
 
-- Search by title, URL, or note text.
+- Search by title, URL, author, or note text.
 - Filter by category.
 - Click a title to open just that one page in a new tab.
 - Check several rows and click **Open selected in new tabs** to reopen a

@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <title>Tab Tack — Saved Items</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
 <style>
   body { font-family: system-ui, sans-serif; margin: 0; padding: 16px 24px; color: #222; }
   h1 { font-size: 18px; margin: 0 0 12px; display: flex; align-items: baseline; gap: 8px; }
@@ -29,6 +31,12 @@
   .title-link { color: #2f4b6e; font-weight: 600; text-decoration: none; cursor: pointer; }
   .title-link:hover { text-decoration: underline; }
   .url { color: #888; font-size: 11px; word-break: break-all; }
+  .url-toggle {
+    font-size: 10px; padding: 0 4px; margin-left: 4px; cursor: pointer;
+    border: 1px solid #ccc; border-radius: 3px; background: white; color: #666;
+    line-height: 1.5; vertical-align: middle;
+  }
+  .url-toggle:hover { background: #f0f0f0; }
   .meta { color: #555; font-size: 12px; }
   .categories span {
     display: inline-block; background: #e8eef5; color: #2f4b6e; border-radius: 3px;
@@ -81,7 +89,7 @@
 <body>
   <h1>Tab Tack <span id="version"></span></h1>
   <div class="toolbar">
-    <input type="text" id="search" placeholder="Search title, URL, note...">
+    <input type="text" id="search" placeholder="Search title, URL, author, note...">
     <select id="categoryFilter">
       <option value="">All categories</option>
     </select>

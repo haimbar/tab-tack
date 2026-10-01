@@ -6,6 +6,8 @@ let sortKey = "saved"; // "saved" | "author"
 let sortDir = "desc"; // "asc" | "desc"
 let groupByCategory = false;
 
+const URL_TRUNCATE_LENGTH = 60;
+
 document.addEventListener("DOMContentLoaded", init);
 document.getElementById("search").addEventListener("input", render);
 document.getElementById("categoryFilter").addEventListener("change", render);
@@ -98,7 +100,7 @@ function filteredEntries() {
   const catFilter = document.getElementById("categoryFilter").value.toLowerCase();
 
   return allEntries.filter((e) => {
-    const haystack = `${e.title || ""} ${e.url || ""} ${e.annotation || ""}`.toLowerCase();
+    const haystack = `${e.title || ""} ${e.url || ""} ${e.author || ""} ${e.annotation || ""}`.toLowerCase();
     if (search && !haystack.includes(search)) return false;
     if (catFilter && !(e.categories || []).some((c) => c.toLowerCase() === catFilter)) return false;
     return true;
@@ -182,6 +184,38 @@ function updateHeaderIndicators() {
   thCategory.classList.toggle("active", groupByCategory);
 }
 
+function buildUrlDiv(url) {
+  const urlDiv = document.createElement("div");
+  urlDiv.className = "url";
+
+  if (!url || url.length <= URL_TRUNCATE_LENGTH) {
+    urlDiv.textContent = url || "";
+    return urlDiv;
+  }
+
+  let expanded = false;
+  const textSpan = document.createElement("span");
+  const toggleBtn = document.createElement("button");
+  toggleBtn.type = "button";
+  toggleBtn.className = "url-toggle";
+
+  function render() {
+    textSpan.textContent = expanded ? url : `${url.slice(0, URL_TRUNCATE_LENGTH)}…`;
+    toggleBtn.textContent = expanded ? "−" : "+";
+    toggleBtn.title = expanded ? "Show less" : "Show full URL";
+  }
+  render();
+
+  toggleBtn.addEventListener("click", () => {
+    expanded = !expanded;
+    render();
+  });
+
+  urlDiv.appendChild(textSpan);
+  urlDiv.appendChild(toggleBtn);
+  return urlDiv;
+}
+
 function buildRow(e) {
   const tr = document.createElement("tr");
 
@@ -204,10 +238,7 @@ function buildRow(e) {
     browser.tabs.create({ url: e.url });
   });
   titleTd.appendChild(link);
-  const urlDiv = document.createElement("div");
-  urlDiv.className = "url";
-  urlDiv.textContent = e.url;
-  titleTd.appendChild(urlDiv);
+  titleTd.appendChild(buildUrlDiv(e.url));
   tr.appendChild(titleTd);
 
   const metaTd = document.createElement("td");
