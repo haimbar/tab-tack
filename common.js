@@ -329,21 +329,25 @@ function parseMarkdownExport(text) {
     .filter((e) => e.url);
 }
 
-async function writeMarkdownFile(entries) {
-  const md = renderMarkdown(entries);
-  const blob = new Blob([md], { type: "text/markdown" });
+// Shared by writeMarkdownFile/exportEntriesToFile below - saveAs:true (the
+// JSON export, letting the user pick where) has no conflictAction of its
+// own; saveAs:false (the markdown file, always the same path) overwrites
+// in place.
+async function downloadBlob(content, mimeType, filename, saveAs) {
+  const blob = new Blob([content], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
-  const { filename = "tab-tack.md" } = await browser.storage.local.get("filename");
+  const options = { url: blobUrl, filename, saveAs };
+  if (!saveAs) options.conflictAction = "overwrite";
 
-  const downloadId = await browser.downloads.download({
-    url: blobUrl,
-    filename,
-    conflictAction: "overwrite",
-    saveAs: false
-  });
-
+  const downloadId = await browser.downloads.download(options);
   await waitForDownloadComplete(downloadId);
   URL.revokeObjectURL(blobUrl);
+}
+
+async function writeMarkdownFile(entries) {
+  const md = renderMarkdown(entries);
+  const { filename = "tab-tack.md" } = await browser.storage.local.get("filename");
+  await downloadBlob(md, "text/markdown", filename, false);
 }
 
 // --- Export / import for manual sharing and backup ---------------------
@@ -374,18 +378,8 @@ function buildExportPayload(entries) {
 async function exportEntriesToFile(entries) {
   const payload = buildExportPayload(entries);
   const json = JSON.stringify(payload, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const blobUrl = URL.createObjectURL(blob);
   const stamp = new Date().toISOString().slice(0, 10);
-
-  const downloadId = await browser.downloads.download({
-    url: blobUrl,
-    filename: `tab-tack-export-${stamp}.json`,
-    saveAs: true
-  });
-
-  await waitForDownloadComplete(downloadId);
-  URL.revokeObjectURL(blobUrl);
+  await downloadBlob(json, "application/json", `tab-tack-export-${stamp}.json`, true);
 }
 
 function parseImportPayload(jsonText) {

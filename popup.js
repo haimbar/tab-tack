@@ -1,23 +1,20 @@
 document.addEventListener("DOMContentLoaded", init);
 document.getElementById("save").addEventListener("click", saveEntry);
-document.getElementById("viewSaved").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await openOrFocusExtensionPage("list.html");
-  window.close();
-});
-document.getElementById("helpLink").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await openOrFocusExtensionPage("help.html");
-  window.close();
-});
-// Opens "View saved pages" rather than exporting directly from here: the
-// popup can lose focus (and get closed by the browser) the moment a native
-// Save dialog opens, which would abort the export mid-flight.
-document.getElementById("backupNoticeLink").addEventListener("click", async (e) => {
-  e.preventDefault();
-  await openOrFocusExtensionPage("list.html");
-  window.close();
-});
+
+function wireExtensionPageLink(elementId, path) {
+  document.getElementById(elementId).addEventListener("click", async (e) => {
+    e.preventDefault();
+    await openOrFocusExtensionPage(path);
+    window.close();
+  });
+}
+wireExtensionPageLink("viewSaved", "list.html");
+wireExtensionPageLink("helpLink", "help.html");
+// backupNoticeLink opens "View saved pages" rather than exporting directly
+// from here: the popup can lose focus (and get closed by the browser) the
+// moment a native Save dialog opens, which would abort the export
+// mid-flight.
+wireExtensionPageLink("backupNoticeLink", "list.html");
 
 async function init() {
   document.getElementById("version").textContent = `v${browser.runtime.getManifest().version}`;

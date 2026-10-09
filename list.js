@@ -23,18 +23,18 @@ document.getElementById("importMarkdownBtn").addEventListener("click", () => {
 });
 document.getElementById("importMarkdownFile").addEventListener("change", importFromMarkdownFile);
 document.getElementById("reexport").addEventListener("click", reexportMarkdown);
-document.getElementById("helpLink").addEventListener("click", (e) => {
-  e.preventDefault();
-  openOrFocusExtensionPage("help.html");
-});
+function wireHelpLink(elementId) {
+  document.getElementById(elementId).addEventListener("click", (e) => {
+    e.preventDefault();
+    openOrFocusExtensionPage("help.html");
+  });
+}
+wireHelpLink("helpLink");
+wireHelpLink("backupBannerHelpLink");
 document.getElementById("backupBannerExport").addEventListener("click", exportFullBackup);
 document.getElementById("backupBannerDismiss").addEventListener("click", () => {
   backupBannerDismissed = true;
   renderBackupBanner();
-});
-document.getElementById("backupBannerHelpLink").addEventListener("click", (e) => {
-  e.preventDefault();
-  openOrFocusExtensionPage("help.html");
 });
 document.getElementById("thSaved").addEventListener("click", () => setSort("saved"));
 document.getElementById("thAuthor").addEventListener("click", () => setSort("author"));
@@ -218,16 +218,16 @@ function buildUrlDiv(url) {
   toggleBtn.type = "button";
   toggleBtn.className = "url-toggle";
 
-  function render() {
+  function updateUrlToggle() {
     textSpan.textContent = expanded ? url : `${url.slice(0, URL_TRUNCATE_LENGTH)}…`;
     toggleBtn.textContent = expanded ? "−" : "+";
     toggleBtn.title = expanded ? "Show less" : "Show full URL";
   }
-  render();
+  updateUrlToggle();
 
   toggleBtn.addEventListener("click", () => {
     expanded = !expanded;
-    render();
+    updateUrlToggle();
   });
 
   urlDiv.appendChild(textSpan);
@@ -536,49 +536,51 @@ function openSelected() {
   }
 }
 
-async function exportSelected() {
-  const btn = document.getElementById("exportSelected");
+// Shared "disable, show progress, run the task, flash success/failure,
+// restore after a beat" pattern for the three export-ish buttons
+// (exportSelected/exportFullBackup/reexportMarkdown) - previously
+// duplicated per-button, which had let exportFullBackup drift out of sync
+// (no "Exported!" flash on success, "Export failed" never reverting).
+async function withButtonFeedback(btn, task, onDone) {
   const originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = "Exporting…";
   try {
-    const selected = selectedEntries();
-    await exportEntriesToFile(selected);
+    await task();
     btn.textContent = "Exported!";
-    // Only a full export (everything, not a partial "share a few entries
-    // with someone" export) counts as a real backup for the reminder.
-    if (selected.length === allEntries.length) {
-      await recordFullBackup();
-      await refreshBackupBanner();
-    }
   } catch (err) {
     console.error(err);
     btn.textContent = "Export failed";
   } finally {
     setTimeout(() => {
       btn.textContent = originalLabel;
-      updateOpenSelectedState();
+      if (onDone) onDone();
+      else btn.disabled = false;
     }, 1500);
   }
 }
 
+async function exportSelected() {
+  const btn = document.getElementById("exportSelected");
+  await withButtonFeedback(btn, async () => {
+    const selected = selectedEntries();
+    await exportEntriesToFile(selected);
+    // Only a full export (everything, not a partial "share a few entries
+    // with someone" export) counts as a real backup for the reminder.
+    if (selected.length === allEntries.length) {
+      await recordFullBackup();
+      await refreshBackupBanner();
+    }
+  }, updateOpenSelectedState);
+}
+
 async function exportFullBackup() {
   const btn = document.getElementById("backupBannerExport");
-  const originalLabel = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "Exporting…";
-  try {
+  await withButtonFeedback(btn, async () => {
     await exportEntriesToFile(allEntries);
     await recordFullBackup();
     await refreshBackupBanner();
-  } catch (err) {
-    console.error(err);
-    btn.textContent = "Export failed";
-    btn.disabled = false;
-    return;
-  }
-  btn.textContent = originalLabel;
-  btn.disabled = false;
+  });
 }
 
 let backupBannerDismissed = false;
@@ -654,19 +656,5 @@ async function importFromMarkdownFile(evt) {
 
 async function reexportMarkdown() {
   const btn = document.getElementById("reexport");
-  const originalLabel = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = "Exporting…";
-  try {
-    await writeMarkdownFile(allEntries);
-    btn.textContent = "Exported!";
-  } catch (err) {
-    console.error(err);
-    btn.textContent = "Export failed";
-  } finally {
-    setTimeout(() => {
-      btn.textContent = originalLabel;
-      btn.disabled = false;
-    }, 1500);
-  }
+  await withButtonFeedback(btn, () => writeMarkdownFile(allEntries));
 }
