@@ -4,6 +4,10 @@ A small browser extension. Click the toolbar button on any page to save its
 title, URL, (auto-detected) author/date, the time you saved it, and your own
 typed annotation as a new entry in a markdown file.
 
+This same document is also available from inside the extension — click
+**Help** in the toolbar popup or at the top-right of **View saved pages**
+— so it's there without needing to find this repo again.
+
 ## Supported browsers
 
 | Browser | Status |

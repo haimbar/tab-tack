@@ -24,7 +24,8 @@
     color: #fff; background: #2f4b6e; border-radius: 4px; text-decoration: none;
   }
   #viewSaved:hover { background: #24395a; }
-  #version { margin-top: 8px; font-size: 11px; color: #999; text-align: center; }
+  #footer { margin-top: 8px; font-size: 11px; color: #999; text-align: center; }
+  #footer a { color: #999; }
 </style>
 </head>
 <body>
@@ -51,7 +52,7 @@
 
   <button id="save">Save to markdown file</button>
   <div id="status"></div>
-  <div id="version"></div>
+  <div id="footer"><span id="version"></span> · <a href="#" id="helpLink">Help</a></div>
 
   <script src="vendor/browser-polyfill.min.js"></script>
   <script src="common.js"></script>

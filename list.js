@@ -23,6 +23,10 @@ document.getElementById("importMarkdownBtn").addEventListener("click", () => {
 });
 document.getElementById("importMarkdownFile").addEventListener("change", importFromMarkdownFile);
 document.getElementById("reexport").addEventListener("click", reexportMarkdown);
+document.getElementById("helpLink").addEventListener("click", (e) => {
+  e.preventDefault();
+  openOrFocusExtensionPage("help.html");
+});
 document.getElementById("thSaved").addEventListener("click", () => setSort("saved"));
 document.getElementById("thAuthor").addEventListener("click", () => setSort("author"));
 document.getElementById("thCategory").addEventListener("click", () => {

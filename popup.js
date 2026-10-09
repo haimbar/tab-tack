@@ -2,14 +2,12 @@ document.addEventListener("DOMContentLoaded", init);
 document.getElementById("save").addEventListener("click", saveEntry);
 document.getElementById("viewSaved").addEventListener("click", async (e) => {
   e.preventDefault();
-  const listUrl = browser.runtime.getURL("list.html");
-  const [existing] = await browser.tabs.query({ url: listUrl });
-  if (existing) {
-    await browser.tabs.update(existing.id, { active: true });
-    await browser.windows.update(existing.windowId, { focused: true });
-  } else {
-    await browser.tabs.create({ url: listUrl });
-  }
+  await openOrFocusExtensionPage("list.html");
+  window.close();
+});
+document.getElementById("helpLink").addEventListener("click", async (e) => {
+  e.preventDefault();
+  await openOrFocusExtensionPage("help.html");
   window.close();
 });
 

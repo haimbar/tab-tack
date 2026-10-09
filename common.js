@@ -23,6 +23,19 @@ function isSafeUrl(url) {
   }
 }
 
+// Switches to an already-open tab for one of the extension's own pages
+// (list.html, help.html) instead of opening a duplicate.
+async function openOrFocusExtensionPage(path) {
+  const url = browser.runtime.getURL(path);
+  const [existing] = await browser.tabs.query({ url });
+  if (existing) {
+    await browser.tabs.update(existing.id, { active: true });
+    await browser.windows.update(existing.windowId, { focused: true });
+  } else {
+    await browser.tabs.create({ url });
+  }
+}
+
 // --- Sync storage layer -----------------------------------------------
 //
 // Entries live in browser.storage.sync so they follow the user's browser
