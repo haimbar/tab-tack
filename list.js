@@ -27,6 +27,15 @@ document.getElementById("helpLink").addEventListener("click", (e) => {
   e.preventDefault();
   openOrFocusExtensionPage("help.html");
 });
+document.getElementById("backupBannerExport").addEventListener("click", exportFullBackup);
+document.getElementById("backupBannerDismiss").addEventListener("click", () => {
+  backupBannerDismissed = true;
+  renderBackupBanner();
+});
+document.getElementById("backupBannerHelpLink").addEventListener("click", (e) => {
+  e.preventDefault();
+  openOrFocusExtensionPage("help.html");
+});
 document.getElementById("thSaved").addEventListener("click", () => setSort("saved"));
 document.getElementById("thAuthor").addEventListener("click", () => setSort("author"));
 document.getElementById("thCategory").addEventListener("click", () => {
@@ -52,12 +61,14 @@ async function init() {
 
   refreshCategoryFilterOptions();
   render();
+  await refreshBackupBanner();
 }
 
 async function reload() {
   allEntries = await getAllEntries();
   masterCategories = await getCategories();
   refreshCategoryFilterOptions();
+  await refreshBackupBanner();
 }
 
 function refreshCategoryFilterOptions() {
@@ -309,6 +320,7 @@ async function deleteEntry(id) {
 
   await writeMarkdownFile(allEntries);
   render();
+  await refreshBackupBanner();
 }
 
 function buildEditRow(e) {
@@ -493,6 +505,7 @@ async function saveEdit(id) {
     refreshCategoryFilterOptions();
     editingId = null;
     render();
+    await refreshBackupBanner();
   } catch (err) {
     console.error(err);
     status.textContent = "Couldn't save — sync storage may be full.";
@@ -529,8 +542,15 @@ async function exportSelected() {
   btn.disabled = true;
   btn.textContent = "Exporting…";
   try {
-    await exportEntriesToFile(selectedEntries());
+    const selected = selectedEntries();
+    await exportEntriesToFile(selected);
     btn.textContent = "Exported!";
+    // Only a full export (everything, not a partial "share a few entries
+    // with someone" export) counts as a real backup for the reminder.
+    if (selected.length === allEntries.length) {
+      await recordFullBackup();
+      await refreshBackupBanner();
+    }
   } catch (err) {
     console.error(err);
     btn.textContent = "Export failed";
@@ -540,6 +560,39 @@ async function exportSelected() {
       updateOpenSelectedState();
     }, 1500);
   }
+}
+
+async function exportFullBackup() {
+  const btn = document.getElementById("backupBannerExport");
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Exporting…";
+  try {
+    await exportEntriesToFile(allEntries);
+    await recordFullBackup();
+    await refreshBackupBanner();
+  } catch (err) {
+    console.error(err);
+    btn.textContent = "Export failed";
+    btn.disabled = false;
+    return;
+  }
+  btn.textContent = originalLabel;
+  btn.disabled = false;
+}
+
+let backupBannerDismissed = false;
+let backupDue = false;
+
+async function refreshBackupBanner() {
+  const tracking = await getBackupTracking();
+  backupDue = isBackupDue(tracking);
+  renderBackupBanner();
+}
+
+function renderBackupBanner() {
+  document.getElementById("backupBanner").style.display =
+    backupDue && !backupBannerDismissed ? "flex" : "none";
 }
 
 async function finishImport(parsedEntries) {

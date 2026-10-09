@@ -10,11 +10,24 @@ document.getElementById("helpLink").addEventListener("click", async (e) => {
   await openOrFocusExtensionPage("help.html");
   window.close();
 });
+// Opens "View saved pages" rather than exporting directly from here: the
+// popup can lose focus (and get closed by the browser) the moment a native
+// Save dialog opens, which would abort the export mid-flight.
+document.getElementById("backupNoticeLink").addEventListener("click", async (e) => {
+  e.preventDefault();
+  await openOrFocusExtensionPage("list.html");
+  window.close();
+});
 
 async function init() {
   document.getElementById("version").textContent = `v${browser.runtime.getManifest().version}`;
 
   await migrateLegacyStorage();
+
+  const tracking = await getBackupTracking();
+  if (isBackupDue(tracking)) {
+    document.getElementById("backupNotice").style.display = "block";
+  }
 
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   document.getElementById("title").value = tab.title || "";

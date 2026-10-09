@@ -26,9 +26,17 @@
   #viewSaved:hover { background: #24395a; }
   #footer { margin-top: 8px; font-size: 11px; color: #999; text-align: center; }
   #footer a { color: #999; }
+  #backupNotice {
+    display: none; font-size: 11.5px; color: #5c4a1a; background: #fff6e0;
+    border: 1px solid #f0d58c; border-radius: 4px; padding: 6px 8px;
+    margin-bottom: 8px; line-height: 1.4;
+  }
+  #backupNotice a { color: #5c4a1a; font-weight: 600; }
 </style>
 </head>
 <body>
+  <div id="backupNotice">It's been a while since your last full backup —
+    click <a href="#" id="backupNoticeLink">View saved pages</a> to export one.</div>
   <a href="#" id="viewSaved">View saved pages &rarr;</a>
 
   <label for="title">Title</label>

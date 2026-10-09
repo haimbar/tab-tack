@@ -77,6 +77,7 @@ async function addEntryRecord(fields) {
   const record = { ...fields, id };
   const { entryIds = [] } = await browser.storage.sync.get("entryIds");
   await browser.storage.sync.set({ [`entry_${id}`]: record, entryIds: [...entryIds, id] });
+  await recordChange();
   return record;
 }
 
@@ -85,6 +86,7 @@ async function updateEntryRecord(id, fields) {
   const { [key]: existing } = await browser.storage.sync.get(key);
   const updated = { ...existing, ...fields, id };
   await browser.storage.sync.set({ [key]: updated });
+  await recordChange();
   return updated;
 }
 
@@ -92,6 +94,48 @@ async function removeEntryRecord(id) {
   const { entryIds = [] } = await browser.storage.sync.get("entryIds");
   await browser.storage.sync.remove(`entry_${id}`);
   await browser.storage.sync.set({ entryIds: entryIds.filter((x) => x !== id) });
+  await recordChange();
+}
+
+// --- Backup reminder tracking -------------------------------------------
+//
+// Nudges toward periodically exporting a full JSON backup (see README's
+// "Export / import" and "Security" sections) rather than relying on
+// everyone to remember on their own. Tracked in storage.sync, not
+// storage.local - a full backup done on any synced device covers the same
+// synced list every device sees, so it should count for all of them, not
+// just the one device that happened to run the export.
+
+const BACKUP_REMINDER_CHANGE_THRESHOLD = 10;
+const BACKUP_REMINDER_DAYS_THRESHOLD = 7;
+
+async function getBackupTracking() {
+  const { backupTracking } = await browser.storage.sync.get("backupTracking");
+  if (backupTracking) return backupTracking;
+  // First run: start the clock now rather than treating "no tracking data
+  // yet" as "already overdue" - a fresh install shouldn't immediately nag.
+  const fresh = { lastBackupAt: new Date().toISOString(), changesSinceBackup: 0 };
+  await browser.storage.sync.set({ backupTracking: fresh });
+  return fresh;
+}
+
+async function recordChange() {
+  const tracking = await getBackupTracking();
+  await browser.storage.sync.set({
+    backupTracking: { ...tracking, changesSinceBackup: tracking.changesSinceBackup + 1 }
+  });
+}
+
+async function recordFullBackup() {
+  await browser.storage.sync.set({
+    backupTracking: { lastBackupAt: new Date().toISOString(), changesSinceBackup: 0 }
+  });
+}
+
+function isBackupDue(tracking, now = new Date()) {
+  if (tracking.changesSinceBackup >= BACKUP_REMINDER_CHANGE_THRESHOLD) return true;
+  const daysSince = (now - new Date(tracking.lastBackupAt)) / (1000 * 60 * 60 * 24);
+  return daysSince >= BACKUP_REMINDER_DAYS_THRESHOLD;
 }
 
 // One-time move from the old storage.local single-array format to the

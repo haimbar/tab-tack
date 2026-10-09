@@ -139,6 +139,18 @@ entirely — a cloud-synced folder, an email to yourself, a USB drive.
 It's the one copy of your data that isn't subject to either
 `storage.sync`'s own quirks or a Downloads-folder cleanup.
 
+You don't have to remember this on your own — Tab Tack tracks how many
+entries have changed and how long it's been since your last full export,
+and shows a reminder (in the popup and at the top of **View saved
+pages**) once either passes a threshold (currently 10 changes or 1 week,
+whichever comes first). The "Export full backup now" button on **View
+saved pages** does the export and resets the tracking in one click; a
+*partial* export (a few checked entries to share with someone) doesn't
+reset it, since it doesn't actually cover everything. This only shows a
+reminder inside the extension's own pages — no system notification, and
+no background script runs to watch for this between visits, consistent
+with Tab Tack not running anything when you're not actively using it.
+
 There's also **Import from markdown…**, right next to **Import…** — it
 reads a `tab-tack.md` export (the human-readable file, not the JSON one)
 and reconstructs entries from it the same way. This exists specifically

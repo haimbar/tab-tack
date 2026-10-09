@@ -256,6 +256,18 @@ annoying; not worth the $5 + review-queue wait otherwise.
   primary user of this extension, don't switch browsers often enough for
   this to matter in practice. Revisit if that changes.
 
+- **The backup reminder (README: "Export / import") is an in-page banner,
+  not a toolbar badge.** (2026-10-09) A badge visible without opening
+  anything would need a background service worker to keep it updated -
+  a new "background" manifest key and an always-registered (if
+  event-driven/idle-spun-down) execution context, which this project has
+  deliberately avoided so far (no background script at all currently;
+  see README's Security section). Decided against it: the in-page
+  banner already surfaces in the single most frequent interaction with
+  the extension (opening the popup to save a tab), without adding a new
+  architectural piece or any new permission. Revisit only if it turns
+  out people reliably miss the in-page version.
+
 - **The `.md` file is a "download" by classification, not just by
   location — changing where it lands doesn't change that.** Raised
   (2026-10-01) after a real incident: removing/reinstalling the

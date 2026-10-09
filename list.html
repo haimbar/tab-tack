@@ -9,6 +9,18 @@
   body { font-family: system-ui, sans-serif; margin: 0; padding: 16px 24px; color: #222; }
   h1 { font-size: 18px; margin: 0 0 12px; display: flex; align-items: baseline; gap: 8px; }
   h1 #version { font-size: 11px; font-weight: normal; color: #999; }
+  .backup-banner {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: #fff6e0; border: 1px solid #f0d58c; border-radius: 4px;
+    padding: 8px 12px; margin-bottom: 12px; font-size: 12.5px; color: #5c4a1a;
+  }
+  .backup-banner span { flex: 1 1 auto; line-height: 1.4; }
+  .backup-banner code { background: #f5e8c5; border-radius: 3px; padding: 1px 4px; }
+  .backup-banner button {
+    padding: 5px 10px; font-size: 12.5px; cursor: pointer; border-radius: 4px;
+    border: 1px solid #2f4b6e; background: #2f4b6e; color: white; white-space: nowrap;
+  }
+  .backup-banner button.dismiss { background: white; color: #5c4a1a; border-color: #d9c178; }
   .toolbar {
     display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap;
   }
@@ -88,6 +100,13 @@
 </head>
 <body>
   <h1>Tab Tack <span id="version"></span></h1>
+  <div class="backup-banner" id="backupBanner" style="display:none;">
+    <span>It's been a while since your last full backup — exporting a JSON copy
+      protects your notes against more than just <code>storage.sync</code> hiccups
+      (see <a href="#" id="backupBannerHelpLink">Help</a>).</span>
+    <button id="backupBannerExport">Export full backup now</button>
+    <button id="backupBannerDismiss" class="dismiss">Not now</button>
+  </div>
   <div class="toolbar">
     <input type="text" id="search" placeholder="Search title, URL, author, note...">
     <select id="categoryFilter">

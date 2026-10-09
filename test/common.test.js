@@ -451,3 +451,69 @@ test("importEntries strips bidi-override characters from the entry and from the 
   assert.deepEqual(entry.categories, ["evilcat"]);
   assert.deepEqual(await ctx.getCategories(), ["evilcat"]);
 });
+
+test("backup reminder tracking", async (t) => {
+  await t.test("a fresh install starts the clock rather than being already overdue", async () => {
+    const { ctx } = loadCommon();
+    const tracking = await ctx.getBackupTracking();
+    assert.equal(tracking.changesSinceBackup, 0);
+    assert.ok(!ctx.isBackupDue(tracking));
+  });
+
+  await t.test("addEntryRecord/updateEntryRecord/removeEntryRecord each count as a change", async () => {
+    const { ctx } = loadCommon();
+    const a = await ctx.addEntryRecord({ url: "https://a.com", title: "A" });
+    await ctx.updateEntryRecord(a.id, { title: "A2" });
+    await ctx.removeEntryRecord(a.id);
+    const tracking = await ctx.getBackupTracking();
+    assert.equal(tracking.changesSinceBackup, 3);
+  });
+
+  await t.test("importing entries counts a change per entry added", async () => {
+    const { ctx } = loadCommon();
+    await ctx.importEntries([{ url: "https://a.com" }, { url: "https://b.com" }]);
+    const tracking = await ctx.getBackupTracking();
+    assert.equal(tracking.changesSinceBackup, 2);
+  });
+
+  await t.test("isBackupDue is true once the change-count threshold is reached", async () => {
+    const { ctx } = loadCommon();
+    for (let i = 0; i < ctx.BACKUP_REMINDER_CHANGE_THRESHOLD; i++) {
+      await ctx.addEntryRecord({ url: `https://a${i}.com` });
+    }
+    const tracking = await ctx.getBackupTracking();
+    assert.equal(tracking.changesSinceBackup, ctx.BACKUP_REMINDER_CHANGE_THRESHOLD);
+    assert.ok(ctx.isBackupDue(tracking));
+  });
+
+  await t.test("isBackupDue is true once the day threshold has passed, even with 0 changes", () => {
+    const { ctx } = loadCommon();
+    const daysAgo = ctx.BACKUP_REMINDER_DAYS_THRESHOLD + 1;
+    const tracking = {
+      changesSinceBackup: 0,
+      lastBackupAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString()
+    };
+    assert.ok(ctx.isBackupDue(tracking));
+  });
+
+  await t.test("isBackupDue is false just under both thresholds", () => {
+    const { ctx } = loadCommon();
+    const tracking = {
+      changesSinceBackup: ctx.BACKUP_REMINDER_CHANGE_THRESHOLD - 1,
+      lastBackupAt: new Date().toISOString()
+    };
+    assert.ok(!ctx.isBackupDue(tracking));
+  });
+
+  await t.test("recordFullBackup resets the counter and the timestamp", async () => {
+    const { ctx } = loadCommon();
+    await ctx.addEntryRecord({ url: "https://a.com" });
+    await ctx.addEntryRecord({ url: "https://b.com" });
+
+    await ctx.recordFullBackup();
+
+    const tracking = await ctx.getBackupTracking();
+    assert.equal(tracking.changesSinceBackup, 0);
+    assert.ok(!ctx.isBackupDue(tracking));
+  });
+});

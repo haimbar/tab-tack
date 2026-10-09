@@ -44,7 +44,9 @@ const EXPORTS = [
   "exportEntriesToFile", "parseImportPayload", "importEntries",
   "waitForDownloadComplete", "oneLine", "escapeMarkdownStructure",
   "unescapeMarkdownStructure", "parseMarkdownExport",
-  "stripBidiControls", "sanitizeEntryFields"
+  "stripBidiControls", "sanitizeEntryFields",
+  "getBackupTracking", "recordChange", "recordFullBackup", "isBackupDue",
+  "BACKUP_REMINDER_CHANGE_THRESHOLD", "BACKUP_REMINDER_DAYS_THRESHOLD"
 ];
 
 const SOURCE = fs.readFileSync(path.join(__dirname, "..", "..", "common.js"), "utf8");
