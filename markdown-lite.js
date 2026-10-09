@@ -22,8 +22,19 @@ const GITHUB_BLOB_BASE = "https://github.com/haimbar/tab-tack/blob/master/";
 // Help tab away to a raw text file with no way back. Rewriting them to the
 // public GitHub blob URL keeps every link in the rendered page open
 // sensibly in a new tab.
+//
+// This only ever runs on the bundled, first-party README.md today, so
+// there's no live attacker-controlled input reaching it - but the scheme
+// check below is still explicit, not incidental, on purpose: it's what
+// keeps a `[text](javascript:...)` or `[text](data:...)` link from ever
+// becoming clickable (e.g. if this renderer is ever pointed at anything
+// else later, or README.md itself were ever tampered with upstream),
+// rather than relying on it happening to get neutralized as a side effect
+// of string-concatenating it onto GITHUB_BLOB_BASE.
 function resolveLinkHref(url) {
-  return /^https?:\/\//.test(url) ? url : GITHUB_BLOB_BASE + url;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(url)) return "about:blank"; // some other URI scheme - refuse it
+  return GITHUB_BLOB_BASE + url;
 }
 
 const INLINE_TOKEN_RE = /`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s<]+)|\*\*([^*]+)\*\*|\*([^*]+)\*/g;

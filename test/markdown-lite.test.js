@@ -17,6 +17,19 @@ test("resolveLinkHref", async (t) => {
       "https://github.com/haimbar/tab-tack/blob/master/ROADMAP.md"
     );
   });
+
+  await t.test("is case-insensitive for the http(s) scheme", () => {
+    const { resolveLinkHref } = loadMarkdownLite();
+    assert.equal(resolveLinkHref("HTTPS://example.com"), "HTTPS://example.com");
+    assert.equal(resolveLinkHref("HtTp://example.com"), "HtTp://example.com");
+  });
+
+  await t.test("refuses any other URI scheme rather than treating it as a relative path", () => {
+    const { resolveLinkHref } = loadMarkdownLite();
+    assert.equal(resolveLinkHref("javascript:alert(1)"), "about:blank");
+    assert.equal(resolveLinkHref("data:text/html,<script>alert(1)</script>"), "about:blank");
+    assert.equal(resolveLinkHref("mailto:x@example.com"), "about:blank");
+  });
 });
 
 test("parseInline", async (t) => {
