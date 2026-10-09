@@ -289,6 +289,17 @@ annoying; not worth the $5 + review-queue wait otherwise.
   readable export file itself cleanup-proof isn't worth a second
   installable component unless that file's survival starts mattering
   for its own sake, not as a backup mechanism.
+  - **Follow-up** (2026-10-09): `scripts/md-to-import.js` only helped
+    because the person running it (the developer) could clone the repo
+    and run Node. With a public AMO listing in mind, that's not a real
+    recovery path for an ordinary user who hits the same
+    removal/reinstall sync loss. Added `parseMarkdownExport()` to
+    `common.js` (the same parsing logic, now shared rather than
+    duplicated in the script) and an **Import from markdown…** button
+    in `list.html`, so recovery from an old `.md` file works entirely
+    through the UI — `scripts/md-to-import.js` now just calls the
+    shared function and remains useful as a command-line fallback for
+    when the extension itself isn't available to do the import.
 
 ## Still open
 

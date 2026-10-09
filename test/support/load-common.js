@@ -43,6 +43,7 @@ const EXPORTS = [
   "renderMarkdown", "writeMarkdownFile", "buildExportPayload",
   "exportEntriesToFile", "parseImportPayload", "importEntries",
   "waitForDownloadComplete", "oneLine", "escapeMarkdownStructure",
+  "unescapeMarkdownStructure", "parseMarkdownExport",
   "stripBidiControls", "sanitizeEntryFields"
 ];
 

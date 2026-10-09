@@ -125,6 +125,25 @@ Two things this is good for:
   caveat below. Export "select all" periodically and keep the file
   somewhere safe; Import brings everything back on a fresh install.
 
+**Make exporting a habit, not a one-time thing.** `storage.sync` and the
+`.md` file each cover different failure modes (see **Cross-machine
+sync** and the "if the markdown file gets deleted" section below), but
+neither is a substitute for an actual backup you control the location
+of. Periodically click **Export selected as JSON…** with everything
+selected, and keep the resulting file somewhere outside the browser
+entirely — a cloud-synced folder, an email to yourself, a USB drive.
+It's the one copy of your data that isn't subject to either
+`storage.sync`'s own quirks or a Downloads-folder cleanup.
+
+There's also **Import from markdown…**, right next to **Import…** — it
+reads a `tab-tack.md` export (the human-readable file, not the JSON one)
+and reconstructs entries from it the same way. This exists specifically
+for recovering from a lost `storage.sync` (see "If it's the other way
+around" below): since the `.md` file is what most people naturally have
+a copy of lying around (an old Downloads file, an email attachment, a
+backup drive) even without having remembered to do a JSON export, it
+works as a second line of defense.
+
 Matching is by normalized URL (ignoring the `#fragment` and a trailing
 slash), not by any internal id — two installs never share an entry's id,
 so id-based matching would import duplicates every time.
@@ -205,18 +224,24 @@ regenerate the file.
 
 This can happen if the extension gets removed and reinstalled (see
 **Cross-machine sync**'s temporary-add-on caveat above) and sync doesn't
-carry over. If you still have a `tab-tack.md` from before, run:
+carry over. If you still have a `tab-tack.md` from before (an old
+Downloads file, an email attachment, a backup drive — anywhere), click
+**Import from markdown…** on **View saved pages** and select it; entries
+are reconstructed from the file's structure and restored the same way a
+JSON import would be, duplicates skipped by URL as usual.
+
+If you don't have the extension open to do that — say, you're trying to
+recover before reinstalling at all — `scripts/md-to-import.js` in this
+repo does the same parsing from the command line:
 
 ```bash
 node scripts/md-to-import.js path/to/tab-tack.md
 ```
 
-from this repo to parse it back into a Tab Tack JSON file, then **Import…**
-that file from **View saved pages** to restore every entry. This is a
-maintained recovery utility (tracked in `scripts/`, run with Node, not
-loaded by the extension itself) kept around because this is a real
-recurring risk, not a one-time fix — the `.md` file is normally
-write-only from the extension's side otherwise.
+producing a JSON file you can feed into **Import…** once the extension is
+back. This is a maintained recovery utility (tracked in `scripts/`, run
+with Node), not a one-time fix — the `.md` file is otherwise write-only
+from the extension's side.
 
 ## Why it re-writes the whole file instead of appending
 
@@ -323,10 +348,13 @@ folder.
 ## Security
 
 Tab Tack's threat model is narrow — a local tool, no server, no accounts —
-but two features cross a real trust boundary: importing a JSON file
-someone else made, and auto-filling author/date from a page's own
-`<meta>` tags, which any website fully controls. Both are treated as
-untrusted input, not just as "someone else's typing":
+but a few features cross a real trust boundary: importing a JSON or
+markdown file someone else made, and auto-filling author/date from a
+page's own `<meta>` tags, which any website fully controls. All of these
+are treated as untrusted input, not just as "someone else's typing" —
+`importEntries()` is the single choke point both the JSON and markdown
+import paths funnel through, so the same validation applies regardless of
+which file format brought the data in:
 
 - **URL scheme is restricted to `http`/`https`.** Enforced on manual save,
   edit, and import (`isSafeUrl()` in `common.js`). Without this, a crafted

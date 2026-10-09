@@ -180,6 +180,123 @@ test("renderMarkdown", async (t) => {
   });
 });
 
+test("unescapeMarkdownStructure reverses escapeMarkdownStructure's three cases", async (t) => {
+  await t.test("heading, divider, and fence lines", () => {
+    const { ctx } = loadCommon();
+    assert.equal(ctx.unescapeMarkdownStructure("\\## Fake Entry"), "## Fake Entry");
+    assert.equal(ctx.unescapeMarkdownStructure("\\---"), "---");
+    assert.equal(ctx.unescapeMarkdownStructure("\\```js"), "```js");
+  });
+
+  await t.test("leaves ordinary text untouched", () => {
+    const { ctx } = loadCommon();
+    const note = "First line.\n\nSecond paragraph with more detail.";
+    assert.equal(ctx.unescapeMarkdownStructure(note), note);
+  });
+});
+
+test("parseMarkdownExport", async (t) => {
+  await t.test("parses a single entry with every field", () => {
+    const { ctx } = loadCommon();
+    const md = `# Tab Tack
+
+## Real Page
+- **URL:** https://example.com/real
+- **Author:** Jane Doe
+- **Date:** 2026-08-20
+- **Category:** research, firefox
+- **Saved:** 8/25/2026, 3:14:02 PM
+
+Worth revisiting.
+
+---
+`;
+    const entries = ctx.parseMarkdownExport(md);
+    assert.equal(entries.length, 1);
+    assert.deepEqual(entries[0], {
+      title: "Real Page",
+      url: "https://example.com/real",
+      author: "Jane Doe",
+      date: "2026-08-20",
+      categories: ["research", "firefox"],
+      annotation: "Worth revisiting.",
+      saved: new Date("8/25/2026, 3:14:02 PM").toISOString(),
+      savedDisplay: "8/25/2026, 3:14:02 PM"
+    });
+  });
+
+  await t.test("parses multiple entries and skips optional fields that weren't present", () => {
+    const { ctx } = loadCommon();
+    const md = `# Tab Tack
+
+## No Author Or Note
+- **URL:** https://a.com
+- **Saved:** 8/25/2026, 12:00:00 PM
+
+---
+
+## Second Entry
+- **URL:** https://b.com
+- **Category:** teaching
+- **Saved:** 8/26/2026, 1:00:00 PM
+
+A note here
+
+---
+`;
+    const entries = ctx.parseMarkdownExport(md);
+    assert.equal(entries.length, 2);
+    assert.equal(entries[0].url, "https://a.com");
+    assert.equal(entries[0].author, "");
+    assert.equal(entries[0].annotation, "");
+    assert.equal(entries[1].url, "https://b.com");
+    assert.deepEqual(entries[1].categories, ["teaching"]);
+    assert.equal(entries[1].annotation, "A note here");
+  });
+
+  await t.test("round-trips through renderMarkdown without losing data", () => {
+    const { ctx } = loadCommon();
+    // savedDisplay must be derived from saved (as the real app does via
+    // toLocaleString()), not a separately hardcoded string - otherwise this
+    // test's expectations depend on the machine's timezone.
+    const savedDate = new Date("2026-08-25T15:14:02.000Z");
+    const entry = {
+      title: "Round Trip Page",
+      url: "https://example.com/round-trip",
+      author: "A. Author",
+      date: "2026-01-02",
+      categories: ["x", "y"],
+      annotation: "Multi-line note\nwith a second line.",
+      saved: savedDate.toISOString(),
+      savedDisplay: savedDate.toLocaleString()
+    };
+    const md = ctx.renderMarkdown([entry]);
+    const parsed = ctx.parseMarkdownExport(md);
+    assert.equal(parsed.length, 1);
+    assert.deepEqual(parsed[0], entry);
+  });
+
+  await t.test("unescapes an annotation that was escaped on export", () => {
+    const { ctx } = loadCommon();
+    const original = [{
+      title: "Page",
+      url: "https://example.com",
+      annotation: "Nice note\n\n---\n\n## Fake Entry",
+      saved: "2026-08-25T00:00:00.000Z",
+      savedDisplay: "8/25/2026, 12:00:00 AM"
+    }];
+    const md = ctx.renderMarkdown(original);
+    const parsed = ctx.parseMarkdownExport(md);
+    assert.equal(parsed[0].annotation, "Nice note\n\n---\n\n## Fake Entry");
+  });
+
+  await t.test("ignores entries with no URL and returns an empty array for a non-export file", () => {
+    const { ctx } = loadCommon();
+    assert.deepEqual(ctx.parseMarkdownExport("# Tab Tack\n\nNo entries here.\n"), []);
+    assert.deepEqual(ctx.parseMarkdownExport("some random text"), []);
+  });
+});
+
 test("buildExportPayload / parseImportPayload", async (t) => {
   await t.test("export payload has the expected shape and field defaults", () => {
     const { ctx } = loadCommon();

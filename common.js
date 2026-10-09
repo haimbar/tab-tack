@@ -197,6 +197,81 @@ function renderMarkdown(entries) {
   return md;
 }
 
+// Inverse of escapeMarkdownStructure's three cases, for parseMarkdownExport
+// below - restores an annotation's original heading/divider/fence lines
+// that were backslash-escaped on export, rather than leaving the backslash
+// in on a round trip.
+function unescapeMarkdownStructure(s) {
+  return String(s)
+    .split(/\r\n|\r|\n/)
+    .map((line) => {
+      if (/^\s*\\#{1,6}(\s|$)/.test(line)) return line.replace(/^(\s*)\\(#+)/, "$1$2");
+      if (/^\s*\\(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) return line.replace(/^(\s*)\\/, "$1");
+      if (/^\s*\\(`{3,}|~{3,})/.test(line)) return line.replace(/^(\s*)\\([`~]{3,})/, "$1$2");
+      return line;
+    })
+    .join("\n");
+}
+
+// Reconstructs entries from a tab-tack.md export's known structure (## Title
+// heading, URL/Author/Date/Category/Saved bullets, free-text annotation,
+// "---" separators between entries). The .md file is normally write-only
+// from the extension's side - this is the one place that reads it back, for
+// recovering a list when storage.sync is lost but an old export survived
+// (see README's "If it's the other way around" section). Output matches the
+// shape parseImportPayload()/importEntries() already accept, so recovery
+// goes through the same Import path as a JSON file.
+function parseMarkdownEntryBlock(block) {
+  const lines = block.split("\n");
+  const titleMatch = lines[0].match(/^##\s*(.*)$/);
+  const title = titleMatch ? titleMatch[1].trim() : "";
+
+  let url = "";
+  let author = "";
+  let date = "";
+  let categories = [];
+  let savedDisplay = "";
+  let i = 1;
+
+  for (; i < lines.length; i++) {
+    const line = lines[i];
+    let m;
+    if ((m = line.match(/^- \*\*URL:\*\*\s*(.*)$/))) { url = m[1].trim(); continue; }
+    if ((m = line.match(/^- \*\*Author:\*\*\s*(.*)$/))) { author = m[1].trim(); continue; }
+    if ((m = line.match(/^- \*\*Date:\*\*\s*(.*)$/))) { date = m[1].trim(); continue; }
+    if ((m = line.match(/^- \*\*Category:\*\*\s*(.*)$/))) {
+      categories = m[1].split(",").map((c) => c.trim()).filter(Boolean);
+      continue;
+    }
+    if ((m = line.match(/^- \*\*Saved:\*\*\s*(.*)$/))) {
+      savedDisplay = m[1].trim();
+      i++;
+      break;
+    }
+    break; // unrecognized line before "Saved:" - stop reading metadata
+  }
+
+  const rest = lines.slice(i);
+  while (rest.length && rest[0].trim() === "") rest.shift();
+  while (rest.length && rest[rest.length - 1].trim() === "") rest.pop();
+  const annotation = unescapeMarkdownStructure(rest.join("\n"));
+
+  const parsedDate = new Date(savedDisplay);
+  const saved = Number.isNaN(parsedDate.getTime()) ? "" : parsedDate.toISOString();
+
+  return { title, url, author, date, categories, annotation, saved, savedDisplay };
+}
+
+function parseMarkdownExport(text) {
+  const body = String(text).replace(/^#\s*Tab Tack\s*\n+/, "");
+  return body
+    .split(/\n-{3,}\n/)
+    .map((b) => b.trim())
+    .filter(Boolean)
+    .map(parseMarkdownEntryBlock)
+    .filter((e) => e.url);
+}
+
 async function writeMarkdownFile(entries) {
   const md = renderMarkdown(entries);
   const blob = new Blob([md], { type: "text/markdown" });

@@ -18,6 +18,10 @@ document.getElementById("importBtn").addEventListener("click", () => {
   document.getElementById("importFile").click();
 });
 document.getElementById("importFile").addEventListener("change", importFromFile);
+document.getElementById("importMarkdownBtn").addEventListener("click", () => {
+  document.getElementById("importMarkdownFile").click();
+});
+document.getElementById("importMarkdownFile").addEventListener("change", importFromMarkdownFile);
 document.getElementById("reexport").addEventListener("click", reexportMarkdown);
 document.getElementById("thSaved").addEventListener("click", () => setSort("saved"));
 document.getElementById("thAuthor").addEventListener("click", () => setSort("author"));
@@ -534,6 +538,18 @@ async function exportSelected() {
   }
 }
 
+async function finishImport(parsedEntries) {
+  const { added, skipped, rejected } = await importEntries(parsedEntries);
+
+  await reload();
+  render();
+  await writeMarkdownFile(allEntries);
+
+  let message = `Imported ${added}, skipped ${skipped} already saved`;
+  if (rejected > 0) message += `, rejected ${rejected} (missing or unsafe URL)`;
+  return `${message}.`;
+}
+
 async function importFromFile(evt) {
   const file = evt.target.files[0];
   evt.target.value = ""; // allow re-selecting the same file later
@@ -546,19 +562,36 @@ async function importFromFile(evt) {
   try {
     const text = await file.text();
     const parsed = parseImportPayload(text);
-    const { added, skipped, rejected } = await importEntries(parsed);
-
-    await reload();
-    render();
-    await writeMarkdownFile(allEntries);
-
-    let message = `Imported ${added}, skipped ${skipped} already saved`;
-    if (rejected > 0) message += `, rejected ${rejected} (missing or unsafe URL)`;
-    status.textContent = `${message}.`;
+    status.textContent = await finishImport(parsed);
   } catch (err) {
     console.error(err);
     status.style.color = "#b3261e";
     status.textContent = "Import failed — not a valid Tab Tack export file.";
+  }
+}
+
+async function importFromMarkdownFile(evt) {
+  const file = evt.target.files[0];
+  evt.target.value = ""; // allow re-selecting the same file later
+  if (!file) return;
+
+  const status = document.getElementById("importStatus");
+  status.style.color = "#2f4b6e";
+  status.textContent = "Importing…";
+
+  try {
+    const text = await file.text();
+    const parsed = parseMarkdownExport(text);
+    if (parsed.length === 0) {
+      status.style.color = "#b3261e";
+      status.textContent = "No entries found — is this a tab-tack.md export?";
+      return;
+    }
+    status.textContent = await finishImport(parsed);
+  } catch (err) {
+    console.error(err);
+    status.style.color = "#b3261e";
+    status.textContent = "Import failed — couldn't read entries from this markdown file.";
   }
 }
 
