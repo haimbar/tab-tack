@@ -279,11 +279,11 @@ it.
 
 ## Installing
 
-### Firefox (from addons.mozilla.org, once the public listing is live)
-
-Search Firefox Add-ons for "Tab Tack" and click **Add to Firefox** — no
-manual signing or `.xpi` handling needed; Firefox installs and updates it
-like any other add-on. Until the listing is approved, use one of the manual
+Tab Tack isn't published on the Firefox Add-ons store or the Chrome Web
+Store — it's distributed directly as a signed `.xpi` (Firefox) and a
+source `.zip` (Chromium), from a page meant to be hosted outside this repo
+(see **Releasing** below for how those files are generated). For local
+development or trying it out before that page exists, use the manual
 options below.
 
 ### Firefox (temporary, for trying it out)
@@ -325,6 +325,26 @@ signing step against the `listed` channel instead.)
 Alternative: on Firefox Developer Edition or Nightly, set
 `xpinstall.signatures.required` to `false` in `about:config` and load the
 folder directly without signing.
+
+## Releasing
+
+After bumping the version in `manifest.json` (and `package.json` to match):
+
+```bash
+npm run build                                               # docs/-ready source zip
+AMO_API_KEY=<key> AMO_API_SECRET=<secret> npm run sign       # signed, unlisted xpi
+npm run release:docs                                         # assembles docs/
+```
+
+`npm run release:docs` (`scripts/release-docs.js`) picks up whatever
+build/sign just produced in `web-ext-artifacts/` for the current
+`manifest.json` version, copies them into `docs/` as
+`tab-tack-<version>.xpi` and `tab-tack-<version>-source.zip`, deletes any
+older version's copies there, and renders `docs/install.template.html` into
+`docs/install.html` with those filenames and the version number filled in.
+The whole `docs/` folder (install page, icons, xpi, zip) is then ready to
+upload to a website as-is. Edit `docs/install.template.html`, not
+`install.html` directly — the latter is regenerated and gitignored.
 
 ## Linting
 

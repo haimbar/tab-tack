@@ -11,8 +11,10 @@
   "bugs": "https://github.com/haimbar/tab-tack/issues",
   "scripts": {
     "test": "node --test test/*.test.js",
+    "build": "web-ext build --overwrite-dest",
     "sign": "web-ext sign --channel=unlisted --api-key=\"$AMO_API_KEY\" --api-secret=\"$AMO_API_SECRET\"",
-    "sign:listed": "web-ext sign --channel=listed --api-key=\"$AMO_API_KEY\" --api-secret=\"$AMO_API_SECRET\""
+    "sign:listed": "web-ext sign --channel=listed --api-key=\"$AMO_API_KEY\" --api-secret=\"$AMO_API_SECRET\"",
+    "release:docs": "node scripts/release-docs.js"
   },
   "devDependencies": {
     "web-ext": "^8.10.0"
@@ -25,7 +27,9 @@
       "ROADMAP.md",
       "TabTack.png",
       "tab-tack.tar.gz",
-      "*.tar.gz"
+      "*.tar.gz",
+      "docs",
+      "docs/**"
     ]
   }
 }

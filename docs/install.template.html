@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tab Tack — Install &amp; User Guide</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<style>
+  :root {
+    --text: #222; --muted: #666; --faint: #999;
+    --heading: #2f4b6e; --rule: #e5e5e5;
+    --code-bg: #f1f3f6; --table-head: #f7f9fb;
+    --link: #2f4b6e; --warn-bg: #fff8e6; --warn-border: #e8cf8a;
+    --bg: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --text: #e8e8e8; --muted: #aaa; --faint: #888;
+      --heading: #8fb3e0; --rule: #3a3a3a;
+      --code-bg: #2a2d33; --table-head: #262a30;
+      --link: #8fb3e0; --warn-bg: #3a331a; --warn-border: #6b5c2a;
+      --bg: #1b1d21;
+    }
+  }
+  :root[data-theme="dark"] {
+    --text: #e8e8e8; --muted: #aaa; --faint: #888;
+    --heading: #8fb3e0; --rule: #3a3a3a;
+    --code-bg: #2a2d33; --table-head: #262a30;
+    --link: #8fb3e0; --warn-bg: #3a331a; --warn-border: #6b5c2a;
+    --bg: #1b1d21;
+  }
+  body {
+    font-family: system-ui, sans-serif; color: var(--text); background: var(--bg);
+    margin: 0; padding: 16px 16px 64px;
+  }
+  main { max-width: 760px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  header img { width: 40px; height: 40px; }
+  h1 { font-size: 22px; margin: 0; }
+  .tagline { color: var(--muted); margin: 4px 0 0; }
+  h2 {
+    font-size: 17px; color: var(--heading); margin: 32px 0 12px;
+    border-bottom: 1px solid var(--rule); padding-bottom: 5px;
+  }
+  h3 { font-size: 14px; margin: 18px 0 8px; }
+  p { line-height: 1.6; margin: 10px 0; }
+  code {
+    background: var(--code-bg); border-radius: 3px; padding: 1px 5px;
+    font-size: 0.92em; font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  pre {
+    background: var(--code-bg); border-radius: 4px; padding: 10px 12px;
+    overflow-x: auto; font-size: 12.5px; line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; }
+  a { color: var(--link); }
+  ul, ol { line-height: 1.6; padding-left: 22px; }
+  li { margin: 5px 0; }
+  table { border-collapse: collapse; margin: 10px 0; font-size: 13px; width: 100%; }
+  th, td { text-align: left; padding: 6px 10px; border: 1px solid var(--rule); }
+  th { background: var(--table-head); }
+  .note {
+    background: var(--warn-bg); border: 1px solid var(--warn-border);
+    border-radius: 6px; padding: 10px 14px; font-size: 13.5px; margin: 14px 0;
+  }
+  .btn {
+    display: inline-block; background: var(--heading); color: #fff;
+    padding: 9px 16px; border-radius: 6px; text-decoration: none;
+    font-size: 14px; font-weight: 600;
+  }
+  .btn:hover { opacity: 0.9; }
+  .toc { font-size: 13.5px; }
+  .toc ul { padding-left: 18px; }
+  footer { margin-top: 48px; color: var(--faint); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <img src="icons/icon-96.png" alt="">
+  <div>
+    <h1>Tab Tack</h1>
+    <p class="tagline">Save a tab's title, URL, and your own note to a running markdown file.</p>
+    <p class="tagline">Current version: v{{VERSION}}</p>
+  </div>
+</header>
+
+<nav class="toc">
+  <strong>On this page:</strong>
+  <ul>
+    <li><a href="#install-firefox">Install on Firefox</a></li>
+    <li><a href="#install-chromium">Install on Chrome, Edge, Brave, etc.</a></li>
+    <li><a href="#updating">Updating</a></li>
+    <li><a href="#uninstalling">Uninstalling</a></li>
+    <li><a href="#guide">User guide</a></li>
+    <li><a href="#privacy-security">Privacy &amp; security</a></li>
+  </ul>
+</nav>
+
+<div class="note">
+  Tab Tack isn't listed on the Firefox Add-ons store or the Chrome Web
+  Store — it's a small personal tool, distributed directly from this page
+  instead. The Firefox build below is still signed by Mozilla (so Firefox
+  will install it without complaint), it's just not searchable in the
+  store. Nothing here phones home or collects data — see
+  <a href="#privacy-security">Privacy &amp; security</a>.
+</div>
+
+<h2 id="install-firefox">Install on Firefox</h2>
+<p>Requires Firefox 140 or later.</p>
+<ol>
+  <li>Download <a class="btn" href="{{XPI_NAME}}" download>Download for Firefox (.xpi)</a></li>
+  <li>Open Firefox, then either:
+    <ul>
+      <li>Drag the downloaded <code>.xpi</code> file onto any open Firefox window, or</li>
+      <li>Go to <code>about:addons</code> → click the gear icon (⚙) at the top → <strong>Install Add-on From File…</strong> → select the downloaded file.</li>
+    </ul>
+  </li>
+  <li>Click <strong>Add</strong> on the permission prompt. The toolbar icon appears immediately and the install is permanent — it survives restarts, same as any other add-on.</li>
+</ol>
+
+<h2 id="install-chromium">Install on Chrome, Edge, Brave, Opera, Vivaldi</h2>
+<p>
+  Chromium-based browsers only install permanent extensions from their own
+  web store, or from a local folder with <strong>Developer mode</strong>
+  turned on. The second option is what personal, non-store extensions use —
+  it's fully supported, not a hack, and the extension keeps working across
+  restarts once loaded this way.
+</p>
+<ol>
+  <li>Download <a class="btn" href="{{ZIP_NAME}}" download>Download source (.zip)</a></li>
+  <li>Unzip it somewhere permanent on your computer — not a Downloads folder you'll later clean out, and don't delete this folder afterwards. The browser loads the extension from here every time it starts.</li>
+  <li>Open <code>chrome://extensions</code> (Chrome/Brave/Opera/Vivaldi) or <code>edge://extensions</code> (Edge).</li>
+  <li>Turn on <strong>Developer mode</strong> (top-right toggle).</li>
+  <li>Click <strong>Load unpacked</strong> and select the unzipped folder.</li>
+</ol>
+<p>
+  The small "Developer mode extensions" banner Chrome shows afterward is
+  normal and expected for this install method — it isn't a warning about
+  the extension itself.
+</p>
+
+<h2 id="updating">Updating</h2>
+<p>
+  Since Tab Tack isn't distributed through a store, updates don't happen
+  automatically — check back on this page for a newer version.
+</p>
+<ul>
+  <li><strong>Firefox:</strong> download the new <code>.xpi</code> and install it the same way as above; it replaces the old version in place and keeps your saved data.</li>
+  <li><strong>Chromium:</strong> download the new source, unzip it over the same folder (or a fresh one), then click the reload icon (⟳) on Tab Tack's card in <code>chrome://extensions</code>. Your saved data lives in the browser's sync storage, not the folder, so it isn't affected.</li>
+</ul>
+
+<h2 id="uninstalling">Uninstalling</h2>
+<p>
+  Remove it the normal way for your browser — right-click the toolbar icon
+  → <strong>Remove Extension</strong> (Firefox), or <strong>Remove</strong>
+  from the card on <code>chrome://extensions</code> (Chromium). On
+  Chromium, deleting the unzipped folder afterward is fine too.
+</p>
+
+<h2 id="guide">User guide</h2>
+
+<h3>How it works</h3>
+<ul>
+  <li>Click the toolbar icon → a popup shows the page's title and URL (pre-filled), an author/date field (auto-filled from the page's meta tags when present), a category picker, and a text box for your own note.</li>
+  <li>Categories: check existing ones, and/or type new ones (comma-separated). New ones are remembered for next time.</li>
+  <li>Click <strong>Save to markdown file</strong>. The entry is added to the extension's storage, and the entire markdown file is rewritten to your Downloads folder (default: <code>Downloads/tab-tack.md</code>, changeable in the extension's Options page).</li>
+</ul>
+<p>Each entry looks like:</p>
+<pre><code>## Page Title
+- **URL:** https://example.com/article
+- **Author:** Jane Doe
+- **Date:** 2026-08-20
+- **Category:** research, firefox
+- **Saved:** 8/25/2026, 3:14:02 PM
+
+Your annotation goes here.
+
+---</code></pre>
+<p>Saving a URL you've already saved is blocked — the popup shows "Already saved" instead of writing a duplicate (matched by URL, ignoring <code>#fragment</code> and a trailing slash).</p>
+
+<h3>Browsing and reopening saved pages</h3>
+<ul>
+  <li>Click <strong>View saved pages →</strong> at the bottom of the popup for a full, searchable list of everything saved.</li>
+  <li>Search by title, URL, author, or note text; filter by category.</li>
+  <li>Click a title to open that page in a new tab, or check several rows and click <strong>Open selected in new tabs</strong>.</li>
+  <li>Click <strong>Saved</strong> or <strong>Author / Date</strong> to sort; click <strong>Category</strong> to switch to a grouped view instead.</li>
+</ul>
+
+<h3>Editing and deleting</h3>
+<p>Each row has <strong>Edit</strong> (turns the row into an editable form in place) and <strong>Delete</strong> (asks for confirmation). Both immediately update storage and rewrite the markdown file.</p>
+
+<h3>Export / import</h3>
+<p>Check boxes on entries, then <strong>Export selected as JSON…</strong> to save them to a file you choose — useful for sharing a subset with someone else running Tab Tack, or as a backup. <strong>Import…</strong> loads a JSON file back in, skipping anything already saved (matched by URL). <strong>Import from markdown…</strong> does the same from a <code>tab-tack.md</code> file, which is handy if you only have the human-readable export lying around.</p>
+<p><strong>Make exporting a habit.</strong> Sync storage and the markdown file each protect against different failure modes, but neither is a substitute for a backup file you control the location of. Tab Tack reminds you (inside the popup and the saved-pages list) once enough has changed or enough time has passed since your last full export.</p>
+
+<h3>Cross-machine sync</h3>
+<p>
+  Saved entries live in the browser's own sync storage, so they follow you
+  to any other machine signed into the same account — your Firefox Account
+  for Firefox, your Google Account for Chrome/Edge. This doesn't bridge
+  browser families (Firefox and Chrome sync separately), and it has a real
+  size ceiling (roughly 100KB / 512 items total) — comfortably enough for
+  typical use, but not unlimited.
+</p>
+
+<h3>If the markdown file goes missing</h3>
+<p>The <code>.md</code> file is a disposable export — your real data is the synced storage. Click <strong>Download markdown file</strong> on the saved-pages page to regenerate it; nothing is lost.</p>
+
+<h3>If it's the other way around (file survived, synced data didn't)</h3>
+<p>Click <strong>Import from markdown…</strong> and select an old <code>tab-tack.md</code> — entries are reconstructed from it, duplicates skipped automatically.</p>
+
+<h2 id="privacy-security">Privacy &amp; security</h2>
+<p>
+  Tab Tack collects nothing and makes no network requests anywhere in its
+  code — saved entries live only in your browser vendor's own sync
+  storage, which this extension doesn't control and can't see outside of.
+  The <code>downloads</code> permission is used solely to write the
+  markdown/JSON files to your own Downloads folder.
+</p>
+<p>
+  Imported files (JSON or markdown) are treated as untrusted input: URLs
+  are restricted to <code>http</code>/<code>https</code>, markdown-structure
+  injection is neutralized, and bidirectional Unicode override characters
+  are stripped before anything is stored or rendered. There's no
+  <code>eval</code>, no dynamic script injection, and no page content is
+  ever treated as code.
+</p>
+
+<footer>
+  Questions or bugs: <a href="https://github.com/haimbar/tab-tack/issues">GitHub Issues</a> ·
+  Source: <a href="https://github.com/haimbar/tab-tack">github.com/haimbar/tab-tack</a> ·
+  MIT licensed
+</footer>
+
+</main>
+</body>
+</html>
